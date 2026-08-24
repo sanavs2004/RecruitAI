@@ -1,9 +1,0 @@
-Senior Python Developer Role Summary: Lead developer role with focus on building scalable web applications using advanced programming techniques.
-Key Responsibilities: - Design and develop complex software systems leveraging expertise in Django framework for rapid application development.
-- Implement efficient database interactions utilizing PostgreSQL to ensure data integrity and performance optimization.
-- Deploy applications on AWS infrastructure, ensuring secure API gateways are established and maintained.
-- Collaborate with cross-functional teams for continuous integration/continuous deployment (CI/CD) pipelines' development and maintenance.
-Required Qualifications: - Bachelor’s degree in Computer Science or related field; Master’s preferred, especially with a specialization in Software Development.
-- At least one year of experience as Python Developer focusing on web application projects similar to Django-based systems.
-- Hands-on knowledge and professional certification (preferably AWS Certified Solutions Architect) for deploying applications on the cloud platform.
-- Proven understanding of best practices in object-oriented programming, software testing methods, code quality assurance tools usage such as pytest or tox.

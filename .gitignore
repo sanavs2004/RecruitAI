@@ -1,8 +1,35 @@
+# venv/
+# __pycache__/
+# *.pyc
+# .env
+
+# # runtime data
+# resume_store/uploads/
+# backend/jd_store/
+
+# echo resume_store/> .gitignore
+# echo interviews/slots/>> .gitignore
+# echo jd_store/>> .gitignore
+# echo learning_paths/>> .gitignore
+# echo tests_store/>> .gitignore
+# echo *.db>> .gitignore
+# echo modules/training_report.json>> .gitignore
+
 venv/
 __pycache__/
 *.pyc
 .env
+config.py
 
 # runtime data
-resume_store/uploads/
-backend/jd_store/
+resume_store/
+applications/
+auto_screen_logs/
+interviews/
+jd_store/
+learning_paths/
+tests_store/
+analytics/
+models/
+*.db
+modules/training_report.json

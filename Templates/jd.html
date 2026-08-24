@@ -3,468 +3,559 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RecruitAI - JD Generator</title>
+    <title>RecruitAI — JD Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 40px 20px;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-        
-        h1 {
-            color: #333;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #f0f0f0;
-        }
-        
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-        }
-        
-        .input-section {
-            background: #f9f9f9;
-            padding: 25px;
-            border-radius: 15px;
-        }
-        
-        .input-section h2 {
-            color: #444;
-            margin-bottom: 20px;
-            font-size: 1.5rem;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #555;
-        }
-        
-        input, textarea, select {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: all 0.3s;
-        }
-        
-        input:focus, textarea:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
-        }
-        
-        button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 14px 28px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            width: 100%;
-            transition: transform 0.2s;
-        }
-        
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102,126,234,0.3);
-        }
-        
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        
-        .output-section {
-            background: #1e1e2f;
-            color: white;
-            padding: 25px;
-            border-radius: 15px;
-            font-family: 'Courier New', monospace;
-            position: relative;
-            min-height: 400px;
-        }
-        
-        .output-section h2 {
-            color: #fff;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .jd-content {
-            background: #2d2d3f;
-            padding: 20px;
-            border-radius: 10px;
-            white-space: pre-wrap;
-            font-size: 14px;
-            line-height: 1.6;
-            max-height: 500px;
-            overflow-y: auto;
-        }
-        
-        .placeholder {
-            color: #888;
-            text-align: center;
-            padding: 50px 20px;
-            font-style: italic;
-        }
-        
-        .success-badge {
-            background: #00d68f;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        
-        .error-badge {
-            background: #ff3b3b;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 8px;
-            margin-top: 10px;
-        }
-        
-        .status-bar {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-top: 15px;
-        }
-        
-        .spinner {
-            display: none;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .history-section {
-            margin-top: 40px;
-            border-top: 2px solid #f0f0f0;
-            padding-top: 30px;
-        }
-        
-        .history-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-        }
-        
-        .history-item {
-            background: #f9f9f9;
-            padding: 15px;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .history-item:hover {
-            background: #667eea;
-            color: white;
-        }
-        
-        .model-status {
-            display: inline-block;
-            background: #00d68f;
-            color: white;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-            margin-left: 15px;
-        }
-
-        input::placeholder,
-textarea::placeholder {
-    color: #888;        /* visible gray */
-    opacity: 1;         /* override browser fade */
+:root {
+    --bg-dark: #0f1115;
+    --white: #e6e6e6;
+    --glass: rgba(255, 255, 255, 0.06);
+    --glass-hover: rgba(255, 255, 255, 0.12);
+    --glass-border: rgba(255, 255, 255, 0.18);
+    --accent: #4da3ff;
+    --muted: #9aa0a6;
 }
 
-        
-        .model-status.offline {
-            background: #ff3b3b;
-        }
-    </style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body { 
+    font-family: 'Inter', sans-serif; 
+    background: var(--bg-dark); 
+    color: var(--white); 
+    overflow-x: hidden; 
+    line-height: 1.6;
+}
+
+/* --- NAVIGATION --- */
+.topnav {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 25px 8%; width: 100%; z-index: 100;
+    background: rgba(15,17,21,0.9);
+    backdrop-filter: blur(10px);
+    position: sticky; top: 0;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+}
+
+.nav-logo-group { display: flex; align-items: center; gap: 15px; }
+
+.nav-logo { 
+    font-size: 24px; font-weight: 800; font-style: italic; letter-spacing: -1px; 
+}
+
+.nav-logo span { border-bottom: 2px solid var(--accent); }
+
+.nav-links { display: flex; gap: 25px; list-style: none; }
+
+.nav-links a { 
+    text-decoration: none; 
+    color: #d1d5db;
+    font-size: 13px; 
+    opacity: 0.85; 
+    font-weight: 500; 
+    transition: 0.3s; 
+}
+
+.nav-links a:hover, .nav-links a.active { 
+    color: #ffffff;
+    opacity: 1; 
+}
+
+.api-pill {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 16px; 
+    border: 1px solid var(--glass-border);
+    border-radius: 100px; 
+    font-size: 11px; 
+    color: var(--muted);
+}
+
+.pdot { 
+    width: 6px; height: 6px; border-radius: 50%; 
+    background: var(--accent); 
+}
+
+/* --- PAGE LAYOUT --- */
+.page { max-width: 1200px; margin: 0 auto; padding: 60px 8%; }
+
+.page-hd { text-align: center; margin-bottom: 60px; }
+
+.big-heading { 
+    font-size: 42px; font-weight: 700; 
+    letter-spacing: -1.5px; margin-bottom: 15px; 
+}
+
+.divider-line { 
+    width: 120px; height: 1px; 
+    background: rgba(255,255,255,0.3); 
+    margin: 0 auto 20px; 
+}
+
+.sub-heading-italic { 
+    font-size: 18px; font-style: italic; 
+    opacity: 0.8; margin-bottom: 10px; 
+}
+
+.page-sub { 
+    font-size: 13px; color: var(--muted); 
+    max-width: 500px; margin: 0 auto; 
+}
+
+/* --- FORM ELEMENTS --- */
+.form-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 4px;
+    padding: 40px;
+    margin-bottom: 30px;
+    backdrop-filter: blur(10px);
+}
+
+.sec-hd {
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 2px;
+    color: #b0b7c3;
+    margin-bottom: 25px;
+    display: flex; align-items: center; gap: 10px;
+}
+
+.sec-num { color: var(--white); opacity: 0.4; }
+
+.grid2 { 
+    display: grid; grid-template-columns: 1fr 1fr; 
+    gap: 30px; margin-bottom: 30px; 
+}
+
+.fg { display: flex; flex-direction: column; gap: 8px; }
+
+.fl { 
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1px;
+    color: #cbd5e1;
+}
+
+.fl-hint { 
+    font-size: 10px; font-style: italic; 
+    opacity: 0.6; text-transform: none; 
+}
+
+/* INPUTS */
+input[type=text], textarea, select {
+    width: 100%; padding: 14px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 2px;
+    font-size: 14px;
+    color: #ffffff;
+    outline: none;
+    transition: 0.3s;
+}
+
+input:focus, textarea:focus { 
+    border-color: var(--accent);
+    background: rgba(255,255,255,0.12); 
+}
+
+/* Pills */
+.pills { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.pill {
+    padding: 8px 16px;
+    border: 1px solid var(--glass-border);
+    border-radius: 2px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.pill.on { 
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+    font-weight: 600;
+}
+
+/* Chips */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+
+.chip { 
+    background: rgba(255,255,255,0.12);
+    padding: 4px 12px;
+    border-radius: 2px;
+    font-size: 12px;
+    display: flex; gap: 8px;
+}
+
+.cx { cursor: pointer; opacity: 0.6; }
+
+/* Company Cards */
+.co-grid { 
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; 
+}
+
+.co-card {
+    padding: 20px;
+    border: 1px solid var(--glass-border);
+    text-align: center;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.co-card.on { 
+    background: rgba(255,255,255,0.08);
+    border-color: var(--accent);
+}
+
+.co-icon { font-size: 20px; margin-bottom: 8px; }
+
+.co-name { font-size: 13px; font-weight: 700; }
+
+.co-sub { font-size: 10px; color: var(--muted); margin-top: 5px; }
+
+/* --- GENERATE ROW --- */
+.gen-row {
+    display: flex; justify-content: space-between; align-items: center;
+    background: #111418;
+    border: 1px solid rgba(255,255,255,0.15);
+    padding: 30px 40px;
+    border-radius: 4px;
+    margin-bottom: 50px;
+}
+
+.gen-btn {
+    padding: 15px 40px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 2px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.gen-btn:hover { 
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(77,163,255,0.25);
+}
+
+.gen-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* --- RESULT --- */
+.jd-doc {
+    background: #111418;
+    border: 1px solid #2a2f36;
+    padding: 50px;
+    font-size: 15px;
+    color: #e5e7eb;
+    white-space: pre-wrap;
+    line-height: 1.8;
+    border-radius: 4px;
+}
+
+.result-hd { display: flex; gap: 15px; align-items: center; margin-bottom: 20px; }
+
+.r-act {
+    padding: 8px 20px;
+    background: transparent;
+    border: 1px solid var(--glass-border);
+    color: #fff;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 2px;
+}
+
+.r-act:hover:not(:disabled) { border-color: var(--accent); }
+
+.empty { 
+    padding: 80px;
+    text-align: center;
+    border: 1px dashed rgba(255,255,255,0.2);
+}
+
+/* History */
+.hc { 
+    background: #111418;
+    border: 1px solid rgba(255,255,255,0.15);
+    padding: 15px;
+    border-radius: 2px;
+    min-width: 200px;
+    transition: 0.3s;
+}
+
+.hc:hover { border-color: var(--accent); }
+
+@keyframes fadeUp { 
+    from { opacity: 0; transform: translateY(20px); } 
+    to { opacity: 1; transform: translateY(0); } 
+}
+
+@media (max-width: 900px) { 
+    .grid2, .co-grid { grid-template-columns: 1fr; } 
+}
+</style>
 </head>
 <body>
-    <div class="container">
-        <h1>
-             RecruitAI - JD Generator Module
-            <span id="modelStatus" class="model-status">Checking Ollama...</span>
-        </h1>
-        <div class="subtitle">
-            AI-Powered Job Description Generation 
+
+<nav class="topnav">
+    <div class="nav-logo-group">
+        <div class="nav-logo">Recruit<span>AI</span></div>
+    </div>
+    <ul class="nav-links">
+        <li><a href="/">Dashboard</a></li>
+        <li><a href="/generate-jd" class="active">JD Generator</a></li>
+        <li><a href="/screen-candidates">Screen</a></li>
+        <li><a href="/screening-history">History</a></li>
+        <li><a href="/analytics">Analytics</a></li>
+    </ul>
+    <div class="nav-right" style="display: flex; gap: 20px; align-items: center;">
+        <div class="api-pill">
+            <span class="pdot" id="pdot"></span>
+            <!-- <span id="apiLbl">Groq API</span> -->
         </div>
-        
-        <div class="form-grid">
-            <!-- Input Section -->
-            <div class="input-section">
-                <h2>📋 Job Requirements</h2>
-                
-                <div class="form-group">
-                    <label>Job Title</label>
-                    <input type="text" id="role" placeholder="e.g. Senior Python Developer">
+        <div style="width: 30px; height: 30px; background: #222; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;">R</div>
+    </div>
+</nav>
+
+<div class="page">
+    <div class="page-hd">
+        <h1 class="big-heading">JD Engine</h1>
+        <div class="divider-line"></div>
+        <p class="sub-heading-italic">recruit <span>automation</span></p>
+        <p class="page-sub">Define your ideal candidate profile. Our LLaMA-3.3 engine will draft a high-impact job description.</p>
+    </div>
+
+    <div class="form-card">
+        <div class="form-section">
+            <div class="sec-hd"><span class="sec-num">01</span> Role Architecture</div>
+            <div class="grid2">
+                <div class="fg">
+                    <label class="fl">Designation</label>
+                    <input type="text" id="role" placeholder="e.g. Lead Systems Architect">
                 </div>
-                
-                <div class="form-group">
-                    <label>Required Skills (comma separated)</label>
-                    <textarea id="skills" rows="2" placeholder="e.g. Python, Django, AWS, PostgreSQL"></textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label>Experience Required (years)</label>
-                    <select id="experience">
-                        <option value="0-1">Fresher (0-1 years)</option>
-                        <option value="1-3">Junior (1-3 years)</option>
-                        <option value="3-5" selected>Mid-Level (3-5 years)</option>
-                        <option value="5-8">Senior (5-8 years)</option>
-                        <option value="8+">Lead (8+ years)</option>
-                    </select>
-                </div>
-                
-                <button id="generateBtn" onclick="generateJD()">
-                    <span id="btnText">✨ Generate Job Description</span>
-                    <span id="spinner" class="spinner"></span>
-                </button>
-                
-                <div id="errorMessage" style="display:none;" class="error-badge"></div>
-                
-                <div class="status-bar">
-                    <span id="statusText">Ready to generate</span>
+                <div class="fg">
+                    <label class="fl">Stack & Skills <span class="fl-hint">(Press Enter)</span></label>
+                    <input type="text" id="skillInput" placeholder="React, Node, Kubernetes..." onkeydown="handleSkill(event)">
+                    <div class="chips" id="chips"></div>
                 </div>
             </div>
-            
-            <!-- Output Section -->
-            <div class="output-section">
-                <h2>
-                    📄 Generated JD
-                    <span id="successBadge" class="success-badge" style="display:none;">Generated Successfully</span>
-                </h2>
-                <div id="jdOutput" class="jd-content">
-                    <div class="placeholder">
-                        ⚡ Click "Generate Job Description" to create JD using Phi-3 LLM
+            <div class="fg">
+                <label class="fl">Seniority</label>
+                <div class="pills" id="expPills">
+                    <div class="pill" onclick="pickPill(this,'exp','0-1')">Fresher</div>
+                    <div class="pill on" onclick="pickPill(this,'exp','1-3')">Junior</div>
+                    <div class="pill" onclick="pickPill(this,'exp','3-5')">Mid-level</div>
+                    <div class="pill" onclick="pickPill(this,'exp','5-8')">Senior</div>
+                    <div class="pill" onclick="pickPill(this,'exp','8+')">Lead / Staff</div>
+                </div>
+                <input type="hidden" id="experience" value="1-3">
+            </div>
+        </div>
+
+        <div class="form-section" style="margin-top:40px;">
+            <div class="sec-hd"><span class="sec-num">02</span> Mission & Responsibilities</div>
+            <div class="fg">
+                <label class="fl">Core Objectives <span class="fl-hint">(One per line)</span></label>
+                <textarea id="responsibilities" placeholder="- Orchestrate microservices transition&#10;- Drive engineering excellence..."></textarea>
+            </div>
+        </div>
+
+        <div class="form-section" style="margin-top:40px;">
+            <div class="grid2">
+                <div class="fg">
+                    <div class="sec-hd"><span class="sec-num">03</span> Academic</div>
+                    <div class="pills" id="eduPills">
+                         <div class="pill on" onclick="pickPill(this,'edu','Any')">Any</div>
+                            <div class="pill" onclick="pickPill(this,'edu','Diploma')">Diploma</div>
+                            <div class="pill" onclick="pickPill(this,'edu','B.Tech / B.E.')">B.Tech / B.E.</div>
+                            <div class="pill" onclick="pickPill(this,'edu','BCA / BSc')">BCA / BSc</div>
+                            <div class="pill" onclick="pickPill(this,'edu','MCA / M.Tech')">MCA / M.Tech</div>
+                            <div class="pill" onclick="pickPill(this,'edu','MBA')">MBA</div>
+                    </div>
+                    <input type="hidden" id="education" value="Any">
+                </div>
+                <div class="fg">
+                    <div class="sec-hd"><span class="sec-num">04</span> Culture Fit</div>
+                    <div class="pills" id="softSkillPills">
+                        <div class="pill" onclick="toggleSoft(this)">Communication</div>
+                            <div class="pill" onclick="toggleSoft(this)">Leadership</div>
+                            <div class="pill" onclick="toggleSoft(this)">Problem-solving</div>
+                            <div class="pill" onclick="toggleSoft(this)">Teamwork</div>
+                            <div class="pill" onclick="toggleSoft(this)">Adaptability</div>
+                            <div class="pill" onclick="toggleSoft(this)">Time management</div>
+                            <div class="pill" onclick="toggleSoft(this)">Critical thinking</div>
+                            <div class="pill" onclick="toggleSoft(this)">Ownership</div>
+                            <div class="pill" onclick="toggleSoft(this)">Attention to detail</div>
+                            <div class="pill" onclick="toggleSoft(this)">Stakeholder mgmt</div>
+
                     </div>
                 </div>
-                <div style="margin-top: 15px; display: flex; gap: 10px;">
-                    <button id="downloadBtn" onclick="downloadJD()" style="flex:1; background: #2d2d3f;" disabled>
-                        💾 Download
-                    </button>
-                    <button id="copyBtn" onclick="copyJD()" style="flex:1; background: #2d2d3f;" disabled>
-                        📋 Copy
-                    </button>
-                </div>
             </div>
         </div>
+
+        <div class="form-section" style="margin-top:40px;">
+            <div class="sec-hd"><span class="sec-num">05</span> Organization Context</div>
+            <div class="grid2">
+                <div class="fg">
+                    <label class="fl">Company</label>
+                    <input type="text" id="companyName" placeholder="Brand Name">
+                </div>
+                <div class="fg">
+                    <label class="fl">Location</label>
+                    <input type="text" id="location" placeholder="Hybrid / Remote">
+                </div>
+            </div>
+            <div class="co-grid">
+                <div class="co-card on" id="co-startup" onclick="pickCo('startup')">
+                    <div class="co-icon">🚀</div>
+                    <div class="co-name">Startup</div>
+                </div>
+                <div class="co-card" id="co-mnc" onclick="pickCo('mnc')">
+                    <div class="co-icon">🏛️</div>
+                    <div class="co-name">Enterprise</div>
+                </div>
+                <div class="co-card" id="co-product" onclick="pickCo('product')">
+                    <div class="co-icon">📦</div>
+                    <div class="co-name">Product</div>
+                </div>
+                <div class="co-card" id="co-service" onclick="pickCo('service')">
+                    <div class="co-icon">🔧</div>
+                    <div class="co-name">Service</div>
+                </div>
+            </div>
+            <input type="hidden" id="companyType" value="startup">
+        </div>
         
-        <!-- History Section -->
-        <div class="history-section">
-            <h2>📚 Generated JD History</h2>
-            <div id="historyList" class="history-list">
-                <!-- History items will be loaded here -->
-                <div style="text-align: center; padding: 20px; color: #666;">
-                    Loading history...
+        <div class="form-section" style="margin-top:40px;">
+            <div class="sec-hd"><span class="sec-num">06</span> Compensation</div>
+            <div class="grid2">
+                <div class="fg">
+                    <label class="fl">Range</label>
+                    <input type="text" id="salary" placeholder="e.g. 15-25 LPA">
+                </div>
+                <div class="fg">
+                    <label class="fl">Type</label>
+                    <select id="empType">
+                        <option>Full-time</option>
+                        <option>Contract</option>
+                    </select>
                 </div>
             </div>
         </div>
     </div>
 
-    <script>
-        // Check Ollama status on load
-        async function checkOllamaStatus() {
-            try {
-                const response = await fetch('http://localhost:11434/api/tags');
-                if (response.ok) {
-                    document.getElementById('modelStatus').textContent = '✅ Phi-3 Online';
-                    document.getElementById('modelStatus').classList.remove('offline');
-                } else {
-                    throw new Error('Ollama not responding');
-                }
-            } catch (error) {
-                document.getElementById('modelStatus').textContent = '❌ Ollama Offline';
-                document.getElementById('modelStatus').classList.add('offline');
-                document.getElementById('generateBtn').disabled = true;
-            }
-        }
-        
-        // Generate JD
-        async function generateJD() {
-            const role = document.getElementById('role').value;
-            const skills = document.getElementById('skills').value;
-            const experience = document.getElementById('experience').value;
-            
-            if (!role || !skills || !experience) {
-                alert('Please fill all fields');
-                return;
-            }
-            
-            // Show loading state
-            document.getElementById('generateBtn').disabled = true;
-            document.getElementById('spinner').style.display = 'inline-block';
-            document.getElementById('btnText').textContent = ' Generating...';
-            document.getElementById('statusText').textContent = '⏳ Generating JD using Phi-3...';
-            document.getElementById('errorMessage').style.display = 'none';
-            
-            try {
-                const response = await fetch('/generate-jd', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        role: role,
-                        skills: skills,
-                        experience: experience
-                    })
-                });
-                
-                const data = await response.json();
+    <div class="gen-row">
+        <div class="gen-info">
+            <div style="font-weight: 600;">Engine Status</div>
+            <div id="stmsg" style="font-size: 12px; color: var(--muted);">Ready for generation.</div>
+        </div>
+        <button class="gen-btn" id="genBtn" onclick="generate()">
+            <span id="btnTxt">Generate JD</span>
+        </button>
+    </div>
 
-                
-                
-    // ✅ Single validation gate
-    if (!data.success || !data.jd_text) {
-        throw new Error(data.error || "Invalid server response");
+    <div id="resultSection">
+        <div class="result-hd">
+            <h2 style="font-family: 'Syne'; font-size: 18px; flex: 1;">Draft Output</h2>
+            <button class="r-act" id="copyBtn" onclick="copyJD()" disabled>Copy</button>
+            <button class="r-act" id="dlBtn" onclick="dlJD()" disabled>Download</button>
+        </div>
+        <div id="prevBody">
+            <div class="empty">
+                <div style="font-size: 24px; opacity: 0.2; margin-bottom: 10px;">EMPTY_STATE</div>
+                <p style="font-size: 12px; color: #444;">Output will materialize here.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    /* All your original Javascript logic remains exactly as provided in the prompt */
+    var skills=[], softSkills=[], exp='1-3', edu='Any', co='startup';
+
+    function handleSkill(e) {
+        if (e.key!=='Enter' && e.key!==',') return;
+        e.preventDefault();
+        var v=document.getElementById('skillInput').value.trim().replace(/,$/,'');
+        if (v && !skills.includes(v)) { skills.push(v); renderChips(); }
+        document.getElementById('skillInput').value='';
+    }
+    function renderChips() {
+        document.getElementById('chips').innerHTML=skills.map(function(s){
+            return '<div class="chip">'+s+'<span class="cx" onclick="rmSkill(\''+s+'\')">×</span></div>';
+        }).join('');
+    }
+    function rmSkill(s) { skills=skills.filter(function(x){return x!==s;}); renderChips(); }
+
+    function pickPill(el,group,val) {
+        var map={exp:'expPills',edu:'eduPills'};
+        document.querySelectorAll('#'+map[group]+' .pill').forEach(function(p){p.classList.remove('on');});
+        el.classList.add('on');
+        if (group==='exp'){ exp=val; document.getElementById('experience').value=val; }
+        if (group==='edu'){ edu=val; document.getElementById('education').value=val; }
     }
 
-    // ✅ Render JD
-    document.getElementById('jdOutput').innerHTML =
-        data.jd_text.replace(/\n/g, '<br>');
+    function toggleSoft(el) {
+        el.classList.toggle('on');
+        var name=el.textContent.trim();
+        if (el.classList.contains('on')){ if (!softSkills.includes(name)) softSkills.push(name); }
+        else { softSkills=softSkills.filter(function(x){return x!==name;}); }
+    }
 
-    // ✅ UI updates
-    document.getElementById('successBadge').style.display = 'inline-block';
-    document.getElementById('statusText').textContent = '✅ JD generated successfully!';
-    document.getElementById('downloadBtn').disabled = false;
-    document.getElementById('copyBtn').disabled = false;
+    function pickCo(val) {
+        co=val;
+        document.getElementById('companyType').value=val;
+        ['startup','mnc','product','service'].forEach(function(k){
+            document.getElementById('co-'+k).classList.remove('on');
+        });
+        document.getElementById('co-'+val).classList.add('on');
+    }
 
-    loadHistory();
+    async function generate() {
+        var role=document.getElementById('role').value.trim();
+        var sk=skills.join(', ')||document.getElementById('skillInput').value.trim();
+        if (!role||!sk){ alert('Role and Skills are required'); return; }
 
-} catch (error) {
-    document.getElementById('errorMessage').style.display = 'block';
-    document.getElementById('errorMessage').textContent = '❌ Error: ' + error.message;
-    document.getElementById('statusText').textContent = '❌ Generation failed';
-} finally {
-    document.getElementById('generateBtn').disabled = false;
-    document.getElementById('spinner').style.display = 'none';
-    document.getElementById('btnText').textContent = '✨ Generate Job Description';
-}
-        }
-        // Download JD
-        function downloadJD() {
-            const jdText = document.getElementById('jdOutput').innerText;
-            if (jdText && !jdText.includes('Click "Generate"')) {
-                const blob = new Blob([jdText], { type: 'text/plain' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `job_description_${Date.now()}.txt`;
-                a.click();
-            }
-        }
+        document.getElementById('genBtn').disabled=true;
+        document.getElementById('btnTxt').textContent='Processing...';
         
-        // Copy JD
-        function copyJD() {
-            const jdText = document.getElementById('jdOutput').innerText;
-            if (jdText && !jdText.includes('Click "Generate"')) {
-                navigator.clipboard.writeText(jdText);
-                alert('JD copied to clipboard!');
-            }
-        }
-        
-        // Load history
-        async function loadHistory() {
-            try {
-                const response = await fetch('/jd-history');
-                const data = await response.json();
-                
-                if (data.success) {
-                    const historyList = document.getElementById('historyList');
-                    if (data.jds.length === 0) {
-                        historyList.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">No JDs generated yet</div>';
-                        return;
-                    }
-                    
-                    let html = '';
-                    data.jds.slice(0, 6).forEach(jd => {
-                        html += `
-                            <div class="history-item" onclick="loadJD('${jd.filename}')">
-                                <strong>📄 ${jd.filename}</strong><br>
-                                <small>${new Date().toLocaleDateString()}</small>
-                            </div>
-                        `;
-                    });
-                    historyList.innerHTML = html;
-                }
-            } catch (error) {
-                console.error('Failed to load history:', error);
-            }
-        }
-        
-        // Load specific JD
-        async function loadJD(filename) {
-            try {
-                const response = await fetch(`/jd/${filename}`);
-                const text = await response.text();
-                document.getElementById('jdOutput').innerHTML = text.replace(/\n/g, '<br>');
-                document.getElementById('successBadge').style.display = 'inline-block';
-                document.getElementById('downloadBtn').disabled = false;
-                document.getElementById('copyBtn').disabled = false;
-            } catch (error) {
-                console.error('Failed to load JD:', error);
-            }
-        }
-        
-        // Initialize
-        window.onload = function() {
-            checkOllamaStatus();
-            loadHistory();
+        var payload={
+            role: role, skills: sk, experience: exp,
+            responsibilities: document.getElementById('responsibilities').value.trim(),
+            education: edu, soft_skills: softSkills.join(', '),
+            company_name: document.getElementById('companyName').value.trim(),
+            company_type: co, location: document.getElementById('location').value.trim(),
+            salary: document.getElementById('salary').value.trim(),
+            emp_type: document.getElementById('empType').value
         };
-    </script>
+
+        try {
+            var r=await fetch('/generate-jd',{
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify(payload)
+            });
+            var d=await r.json();
+            if (!d.success) throw new Error(d.error);
+
+            document.getElementById('prevBody').innerHTML='<div class="jd-doc">'+d.jd_text+'</div>';
+            ['copyBtn','dlBtn'].forEach(function(id){document.getElementById(id).disabled=false;});
+            document.getElementById('resultSection').scrollIntoView({behavior:'smooth'});
+        } catch(e) {
+            alert('Error: ' + e.message);
+        } finally {
+            document.getElementById('genBtn').disabled=false;
+            document.getElementById('btnTxt').textContent='Generate JD';
+        }
+    }
+
+    function copyJD() {
+        navigator.clipboard.writeText(document.getElementById('prevBody').innerText).then(() => alert('Copied!'));
+    }
+
+    function dlJD() {
+        var a=document.createElement('a');
+        a.href=URL.createObjectURL(new Blob([document.getElementById('prevBody').innerText],{type:'text/plain'}));
+        a.download='JD_'+Date.now()+'.txt'; a.click();
+    }
+</script>
 </body>
 </html>

@@ -5,148 +5,191 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Apply — {{ job_title }}</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+        /* Premium Grey Palette */
+        --bg-main: #121212;
+        --bg-card: #1a1a1a;
+        --bg-input: #0d0d0d;
+        --text-high: #f5f5f5;
+        --text-med: #b0b0b0;
+        --text-low: #6b7280;
+        --accent: #ffffff; /* Keeping it monochromatic and premium */
+        --border: #262626;
+        --success-bg: rgba(16, 185, 129, 0.1);
+        --success-text: #10b981;
+    }
 
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: #f0f4f8;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 40px 20px;
-        }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        .card {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-            max-width: 560px;
-            width: 100%;
-            overflow: hidden;
-        }
+    body {
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+        background: var(--bg-main);
+        color: var(--text-med);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+    }
 
-        .card-header {
-            background: linear-gradient(135deg, #1a7bf2, #0d5ec7);
-            color: white;
-            padding: 28px 36px;
-        }
+    .card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+        max-width: 560px;
+        width: 100%;
+        overflow: hidden;
+    }
 
-        .card-header p {
-            font-size: 12px;
-            opacity: 0.8;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            margin-bottom: 6px;
-        }
+    .card-header {
+        /* Gradient changed to subtle grey-to-black for premium feel */
+        background: linear-gradient(135deg, #222, #000);
+        color: var(--text-high);
+        padding: 32px 36px;
+        border-bottom: 1px solid var(--border);
+    }
 
-        .card-header h2 {
-            font-size: 22px;
-            font-weight: 700;
-        }
+    .card-header p {
+        font-size: 11px;
+        color: var(--text-low);
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+    }
 
-        .card-body { padding: 36px; }
+    .card-header h2 {
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+    }
 
-        .form-group {
-            margin-bottom: 20px;
-        }
+    .card-body { padding: 36px; }
 
-        label {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            color: #374151;
-            margin-bottom: 6px;
-        }
+    .form-group { margin-bottom: 24px; }
 
-        input[type="text"],
-        input[type="email"] {
-            width: 100%;
-            padding: 12px 14px;
-            border: 1.5px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 14px;
-            color: #111;
-            transition: border 0.2s;
-            outline: none;
-        }
+    label {
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-high);
+        margin-bottom: 8px;
+    }
 
-        input:focus { border-color: #1a7bf2; }
+    input[type="text"],
+    input[type="email"] {
+        width: 100%;
+        padding: 14px;
+        background: var(--bg-input);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 14px;
+        color: var(--text-high);
+        transition: all 0.2s;
+        outline: none;
+    }
 
-        .upload-area {
-            border: 2px dashed #d1d5db;
-            border-radius: 10px;
-            padding: 32px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            background: #f8fafc;
-        }
+    input:focus { 
+        border-color: var(--text-low); 
+        background: #000;
+    }
 
-        .upload-area:hover, .upload-area.dragover {
-            border-color: #1a7bf2;
-            background: #f0f7ff;
-        }
+    /* Premium Upload Area */
+    .upload-area {
+        border: 2px dashed var(--border);
+        border-radius: 12px;
+        padding: 40px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        background: var(--bg-input);
+    }
 
-        .upload-area .icon { font-size: 32px; margin-bottom: 8px; }
-        .upload-area p { font-size: 14px; color: #6b7280; }
-        .upload-area span { font-size: 12px; color: #9ca3af; }
+    .upload-area:hover, .upload-area.dragover {
+        border-color: var(--text-med);
+        background: rgba(255, 255, 255, 0.02);
+    }
 
-        #fileInput { display: none; }
+    .upload-area .icon { font-size: 32px; margin-bottom: 12px; opacity: 0.8; }
+    .upload-area p { font-size: 14px; color: var(--text-med); font-weight: 500; }
+    .upload-area span { font-size: 12px; color: var(--text-low); }
 
-        .file-selected {
-            display: none;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 14px;
-            background: #e8f5e9;
-            border-radius: 8px;
-            font-size: 13px;
-            color: #2e7d32;
-            margin-top: 10px;
-            font-weight: 500;
-        }
+    #fileInput { display: none; }
 
-        .btn-submit {
-            width: 100%;
-            padding: 14px;
-            background: #1a7bf2;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-top: 8px;
-            transition: background 0.2s;
-        }
+    .file-selected {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        padding: 14px;
+        background: var(--success-bg);
+        border-radius: 8px;
+        font-size: 13px;
+        color: var(--success-text);
+        margin-top: 15px;
+        font-weight: 600;
+    }
 
-        .btn-submit:hover { background: #0d5ec7; }
-        .btn-submit:disabled { background: #9ca3af; cursor: not-allowed; }
+    .btn-submit {
+        width: 100%;
+        padding: 16px;
+        background: var(--text-high); /* White button on dark theme is very premium */
+        color: black;
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        cursor: pointer;
+        margin-top: 10px;
+        transition: all 0.3s;
+    }
 
-        .success-box {
-            display: none;
-            text-align: center;
-            padding: 40px 20px;
-        }
+    .btn-submit:hover { 
+        background: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(255,255,255,0.1);
+    }
+    
+    .btn-submit:disabled { 
+        background: #333; 
+        color: var(--text-low); 
+        cursor: not-allowed; 
+        transform: none;
+    }
 
-        .success-box .icon { font-size: 56px; margin-bottom: 16px; }
-        .success-box h3 { font-size: 22px; color: #10b981; margin-bottom: 8px; }
-        .success-box p { font-size: 14px; color: #6b7280; line-height: 1.6; }
+    .success-box {
+        display: none;
+        text-align: center;
+        padding: 60px 20px;
+    }
 
-        .error-msg {
-            display: none;
-            padding: 12px 14px;
-            background: #fef2f2;
-            border-left: 4px solid #ef4444;
-            border-radius: 6px;
-            font-size: 13px;
-            color: #b91c1c;
-            margin-bottom: 16px;
-        }
+    .success-box .icon { font-size: 56px; margin-bottom: 20px; }
+    .success-box h3 { font-size: 24px; color: var(--success-text); margin-bottom: 12px; }
+    .success-box p { font-size: 15px; color: var(--text-med); line-height: 1.6; }
 
-        .loading { display: none; text-align: center; padding: 12px; color: #6b7280; font-size: 14px; }
-    </style>
+    .error-msg {
+        display: none;
+        padding: 14px;
+        background: rgba(239, 68, 68, 0.1);
+        border-left: 4px solid #ef4444;
+        border-radius: 4px;
+        font-size: 13px;
+        color: #ef4444;
+        margin-bottom: 20px;
+    }
+
+    .loading { 
+        display: none; 
+        text-align: center; 
+        padding: 15px; 
+        color: var(--text-low); 
+        font-size: 13px; 
+        font-family: monospace;
+    }
+</style>
 </head>
 <body>
 

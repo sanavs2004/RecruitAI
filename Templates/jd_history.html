@@ -6,27 +6,161 @@
     <title>JD History - RecruitAI</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
-        .btn-secondary { background: rgba(255,255,255,0.2); color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; }
-        .btn-secondary:hover { background: rgba(255,255,255,0.3); }
-        .jd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
-        .jd-card { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); transition: transform 0.2s; }
-        .jd-card:hover { transform: translateY(-5px); box-shadow: 0 5px 20px rgba(0,0,0,0.15); }
-        .jd-title { font-size: 18px; font-weight: bold; color: #2c3e50; margin-bottom: 10px; }
-        .jd-meta { color: #7f8c8d; font-size: 14px; margin-bottom: 15px; }
-        .jd-preview { background: #f8f9fa; padding: 15px; border-radius: 5px; max-height: 150px; overflow-y: auto; font-size: 13px; border: 1px solid #e0e0e0; margin-bottom: 15px; }
-        .jd-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-        .btn-view, .btn-use, .btn-share { flex: 1; padding: 8px; text-align: center; border-radius: 5px; text-decoration: none; font-size: 13px; font-weight: 600; }
-        .btn-view  { background: #3498db; color: white; }
-        .btn-use   { background: #27ae60; color: white; }
-        .btn-share { background: #f39c12; color: white; }
-        .btn-share:hover { background: #e67e22; }
-        .empty-state { text-align: center; padding: 60px; background: #f8f9fa; border-radius: 10px; }
-        .empty-state h2 { color: #2c3e50; margin-bottom: 10px; }
-        .empty-state p { color: #7f8c8d; margin-bottom: 20px; }
-        .btn-primary { display: inline-block; padding: 10px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 5px; }
-    </style>
+/* --- BASE --- */
+body {
+    background: radial-gradient(circle at top, #0f172a, #020617);
+    color: #e5e7eb;
+    font-family: 'Inter', sans-serif;
+}
+
+/* --- LAYOUT --- */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* --- HEADER --- */
+header {
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    color: #f1f5f9;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+/* --- BUTTONS --- */
+.btn-secondary {
+    background: rgba(255,255,255,0.08);
+    color: #e5e7eb;
+    padding: 10px 20px;
+    text-decoration: none;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: 0.2s;
+}
+.btn-secondary:hover {
+    background: rgba(255,255,255,0.15);
+}
+
+/* --- GRID --- */
+.jd-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+}
+
+/* --- CARD --- */
+.jd-card {
+    background: rgba(15, 23, 42, 0.85);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+    transition: all 0.25s ease;
+}
+.jd-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+    border-color: rgba(139,92,246,0.4);
+}
+
+/* --- TEXT --- */
+.jd-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #f8fafc;
+    margin-bottom: 10px;
+}
+
+.jd-meta {
+    color: #94a3b8;
+    font-size: 14px;
+    margin-bottom: 15px;
+}
+
+/* --- PREVIEW BOX --- */
+.jd-preview {
+    background: #020617;
+    padding: 15px;
+    border-radius: 8px;
+    max-height: 150px;
+    overflow-y: auto;
+    font-size: 13px;
+    border: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 15px;
+    color: #cbd5e1;
+}
+
+/* --- ACTION BUTTONS --- */
+.jd-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.btn-view, .btn-use, .btn-share {
+    flex: 1;
+    padding: 8px;
+    text-align: center;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+/* Premium color buttons */
+.btn-view  { background: #2563eb; color: white; }
+.btn-use   { background: #16a34a; color: white; }
+.btn-share { background: #d97706; color: white; }
+
+.btn-view:hover  { background: #1d4ed8; }
+.btn-use:hover   { background: #15803d; }
+.btn-share:hover { background: #b45309; }
+
+/* --- EMPTY STATE --- */
+.empty-state {
+    text-align: center;
+    padding: 60px;
+    background: rgba(15,23,42,0.85);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+}
+
+.empty-state h2 {
+    color: #f1f5f9;
+    margin-bottom: 10px;
+}
+
+.empty-state p {
+    color: #94a3b8;
+    margin-bottom: 20px;
+}
+
+/* --- PRIMARY BUTTON --- */
+.btn-primary {
+    display: inline-block;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 600;
+    transition: 0.2s;
+}
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(139,92,246,0.4);
+}
+</style>
 </head>
 <body>
     <div class="container">
@@ -42,11 +176,21 @@
             <div class="jd-grid">
                 {% for jd in jds %}
                 <div class="jd-card">
-                    <div class="jd-title">{{ jd.filename }}</div>
-                    <div class="jd-meta">Created: {{ jd.filename[3:11] if jd.filename.startswith('jd_') else 'Unknown' }}</div>
-                    <div class="jd-preview">{{ jd.content[:200] }}...</div>
+                    <div class="jd-title">
+    {{ jd.filename
+        .replace('jd_', '')
+        .replace('.txt', '')
+        .rsplit('_', 2)[0]
+        .replace('_', ' ')
+        .title()
+    }}
+</div>
+<div class="jd-meta">
+    Created: 
+    {{ jd.filename.replace('.txt','').split('_')[-2] if jd.filename.startswith('jd_') else 'Unknown' }}
+</div>                    <div class="jd-preview">{{ jd.content[:200] }}...</div>
                     <div class="jd-actions">
-                        <a href="/jd/{{ jd.filename }}" class="btn-view">👁 View</a>
+                        <!-- <a href="/jd/{{ jd.filename }}" class="btn-view">👁 View</a> -->
                         <a href="/screen-candidates?use_jd={{ jd.filename }}" class="btn-use">⚡ Use</a>
                         <a href="/jd-share/{{ jd.filename }}" class="btn-share">🔗 Share</a>
                     </div>

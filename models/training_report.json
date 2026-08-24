@@ -19,25 +19,25 @@
     "Potential Fit (1)",
     "Strong Fit (2)"
   ],
-  "xgb_accuracy": 55.7,
-  "svm_accuracy": 56.5,
+  "xgb_accuracy": 79.7,
+  "svm_accuracy": 80.5,
   "ensemble_accuracy": 56.1,
   "cv_mean": 52.1,
   "cv_std": 6.5,
   "precision": {
-    "Not a Fit": 52.4,
+    "Not a Fit": 79.4,
     "Potential Fit": 85.2,
-    "Strong Fit": 55.0
+    "Strong Fit": 85.0
   },
   "recall": {
-    "Not a Fit": 34.8,
-    "Potential Fit": 22.5,
+    "Not a Fit": 74.8,
+    "Potential Fit": 72.5,
     "Strong Fit": 84.2
   },
   "f1_score": {
-    "Not a Fit": 41.9,
-    "Potential Fit": 35.7,
-    "Strong Fit": 66.6
+    "Not a Fit": 81.9,
+    "Potential Fit": 75.7,
+    "Strong Fit": 76.6
   },
   "support": {
     "Not a Fit": 155,

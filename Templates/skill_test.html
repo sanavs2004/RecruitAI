@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill Assessment — RecruitAI</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .header h1 { color: #333; font-size: 1.8rem; }
+        .header p  { color: #666; margin-top: 8px; }
+        .badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+        .progress-bar {
+            background: #f0f0f0;
+            border-radius: 10px;
+            height: 8px;
+            margin: 20px 0;
+        }
+        .progress-fill {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.3s;
+        }
+        .question-card {
+            background: #f9f9f9;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-left: 4px solid #667eea;
+        }
+        .question-number {
+            color: #667eea;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .question-text {
+            color: #333;
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .skill-tag {
+            display: inline-block;
+            background: #e8f4fd;
+            color: #667eea;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-bottom: 15px;
+        }
+        .option {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .option:hover { border-color: #667eea; background: #f0f2ff; }
+        .option input[type="radio"] { margin-right: 12px; accent-color: #667eea; }
+        .option label { cursor: pointer; color: #444; flex: 1; }
+        .option.selected { border-color: #667eea; background: #f0f2ff; }
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 16px 40px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+        .submit-btn:hover { transform: translateY(-2px); }
+        .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .result-card {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+        .result-score {
+            font-size: 4rem;
+            font-weight: 700;
+            margin: 20px 0;
+        }
+        .pass  { color: #4caf50; }
+        .fail  { color: #f44336; }
+        .timer {
+            text-align: right;
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        #timer-display { color: #667eea; font-weight: 600; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <h1>🧠 Skill Assessment</h1>
+        <p id="job-title">Loading assessment...</p>
+        <span class="badge">5 Questions • 10 Minutes • Pass Mark: 60%</span>
+    </div>
+
+    <!-- Timer -->
+    <div class="timer">Time remaining: <span id="timer-display">10:00</span></div>
+
+    <!-- Progress -->
+    <div class="progress-bar">
+        <div class="progress-fill" id="progress" style="width:0%"></div>
+    </div>
+
+    <!-- Questions -->
+    <div id="questions-container"></div>
+
+    <!-- Submit -->
+    <button class="submit-btn" id="submitBtn" onclick="submitTest()" disabled>
+        Submit Assessment
+    </button>
+
+    <!-- Result -->
+    <div class="result-card" id="result-card">
+        <h2>Assessment Complete!</h2>
+        <div class="result-score" id="result-score"></div>
+        <p id="result-message" style="font-size:1.1rem; color:#555;"></p>
+        <p style="color:#888; margin-top:20px; font-size:14px;">
+            The recruiter has been notified of your results.
+        </p>
+    </div>
+</div>
+
+<script>
+    let testData   = null;
+    let answers    = {};
+    let timerInterval;
+    let timeLeft   = 600; // 10 minutes
+
+    // Load test on page load
+    window.onload = async function() {
+        const testId = window.location.pathname.split('/').pop();
+        try {
+            const res  = await fetch(`/api/skill-test/${testId}`);
+            const data = await res.json();
+            if (!data.success) {
+                document.getElementById('questions-container').innerHTML =
+                    '<p style="color:red;text-align:center">Test not found or already completed.</p>';
+                return;
+            }
+            testData = data.test;
+            renderTest(testData);
+            startTimer();
+        } catch(e) {
+            console.error(e);
+        }
+    };
+
+    function renderTest(test) {
+        document.getElementById('job-title').textContent =
+            `${test.job_title} — Skill Verification`;
+
+        let html = '';
+        test.questions.forEach((q, i) => {
+            html += `
+            <div class="question-card" id="qcard-${i}">
+                <div class="question-number">Question ${i+1} of ${test.total}</div>
+                <span class="skill-tag">${q.skill}</span>
+                <div class="question-text">${q.question}</div>
+                ${Object.entries(q.options).map(([key, val]) => `
+                <div class="option" id="opt-${i}-${key}" onclick="selectOption(${i}, '${key}')">
+                    <input type="radio" name="q${i}" value="${key}" id="r-${i}-${key}">
+                    <label for="r-${i}-${key}"><strong>${key}.</strong> ${val}</label>
+                </div>`).join('')}
+            </div>`;
+        });
+        document.getElementById('questions-container').innerHTML = html;
+    }
+
+    function selectOption(qIndex, optKey) {
+        // Clear previous selection for this question
+        ['A','B','C','D'].forEach(k => {
+            const el = document.getElementById(`opt-${qIndex}-${k}`);
+            if (el) el.classList.remove('selected');
+        });
+        // Mark selected
+        document.getElementById(`opt-${qIndex}-${optKey}`).classList.add('selected');
+        document.querySelector(`#r-${qIndex}-${optKey}`).checked = true;
+        answers[qIndex] = optKey;
+
+        // Update progress
+        const answered = Object.keys(answers).length;
+        const total    = testData.questions.length;
+        document.getElementById('progress').style.width =
+            `${(answered / total) * 100}%`;
+
+        // Enable submit when all answered
+        if (answered === total) {
+            document.getElementById('submitBtn').disabled = false;
+        }
+    }
+
+    function startTimer() {
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            const m = Math.floor(timeLeft / 60).toString().padStart(2,'0');
+            const s = (timeLeft % 60).toString().padStart(2,'0');
+            document.getElementById('timer-display').textContent = `${m}:${s}`;
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                submitTest();
+            }
+        }, 1000);
+    }
+
+    async function submitTest() {
+        clearInterval(timerInterval);
+        document.getElementById('submitBtn').disabled = true;
+
+        const testId = window.location.pathname.split('/').pop();
+        try {
+            const res  = await fetch(`/api/skill-test/${testId}/submit`, {
+                method : 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body   : JSON.stringify({ answers })
+            });
+            const data = await res.json();
+
+            // Show result
+            document.getElementById('questions-container').style.display = 'none';
+            document.getElementById('submitBtn').style.display           = 'none';
+            document.getElementById('result-card').style.display         = 'block';
+
+            const pct   = data.score_percent;
+            const passed = data.passed;
+
+            document.getElementById('result-score').textContent    = `${pct}%`;
+            document.getElementById('result-score').className      =
+                `result-score ${passed ? 'pass' : 'fail'}`;
+            document.getElementById('result-message').textContent  =
+                passed
+                ? '✅ Congratulations! You passed. The recruiter will contact you shortly.'
+                : '❌ Unfortunately you did not meet the pass mark. A learning path has been sent to your email.';
+
+        } catch(e) {
+            alert('Submission failed. Please try again.');
+            document.getElementById('submitBtn').disabled = false;
+        }
+    }
+</script>
+</body>
+</html>

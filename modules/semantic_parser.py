@@ -7,34 +7,27 @@ class SemanticParser:
     """Parse resumes with semantic understanding"""
     
     def __init__(self):
-        # Try to import sentence_transformers for similarity
+        # ── FIX: Don't load SentenceTransformer here ──────────────────────
+        # ResumeScreeningEngine already loads it as self.embedder
+        # Loading it twice causes memory crash / freeze
         try:
-            from sentence_transformers import SentenceTransformer, util
+            from sentence_transformers import util
             self.util = util
-            self.model = SentenceTransformer('all-MiniLM-L6-v2')
             self.semantic_support = True
         except ImportError:
             self.semantic_support = False
             print("⚠️ sentence-transformers not installed. Using basic matching.")
     
     def extract_github_username(self, text):
-        """
-        Extract GitHub username from resume text - ENHANCED VERSION
-        Looks for various GitHub URL patterns
-        """
+        """Extract GitHub username from resume text"""
         import re
         
         print("🔍 Searching for GitHub in text...")
-        
-        # Print sample of text for debugging
         sample = text[:500].replace('\n', ' ')
         print(f"Text sample: {sample}")
         
-        # List to store all found usernames
         found_usernames = []
         
-        # ===== PATTERN 1: Standard GitHub URLs =====
-        # github.com/username, https://github.com/username, www.github.com/username
         patterns = [
             r'github\.com[/:]([a-zA-Z0-9](?:[a-zA-Z0-9]|-(?!-)){0,38}[a-zA-Z0-9])',
             r'https?://(?:www\.)?github\.com/([a-zA-Z0-9](?:[a-zA-Z0-9]|-(?!-)){0,38}[a-zA-Z0-9])',
@@ -48,22 +41,17 @@ class SemanticParser:
                     found_usernames.append(username)
                     print(f"✅ Found GitHub username (URL): {username}")
         
-        # ===== PATTERN 2: GitHub with @ mention =====
-        # @username in context of GitHub
         lines = text.split('\n')
         for line in lines:
             if 'github' in line.lower():
-                # Look for @username
                 at_matches = re.findall(r'@([a-zA-Z0-9](?:[a-zA-Z0-9]|-(?!-)){0,38}[a-zA-Z0-9])', line)
                 for username in at_matches:
                     if username and username not in found_usernames:
                         found_usernames.append(username)
                         print(f"✅ Found GitHub username (@mention): {username}")
         
-        # ===== PATTERN 3: GitHub: username format =====
         for line in lines:
             if 'github' in line.lower():
-                # Look for "github: username" or "github username" 
                 pattern = r'github[\s:]+([a-zA-Z0-9](?:[a-zA-Z0-9]|-(?!-)){0,38}[a-zA-Z0-9])'
                 matches = re.findall(pattern, line, re.IGNORECASE)
                 for username in matches:
@@ -71,25 +59,18 @@ class SemanticParser:
                         found_usernames.append(username)
                         print(f"✅ Found GitHub username (label): {username}")
         
-        # ===== PATTERN 4: Look in contact sections =====
-        # Often GitHub is listed with other contact info
         contact_keywords = ['contact', 'profile', 'portfolio', 'github', 'git']
         for line in lines:
             line_lower = line.lower()
             if any(keyword in line_lower for keyword in contact_keywords):
-                # Look for usernames that might be GitHub
-                # Match words that look like usernames (alphanumeric, hyphens)
                 potential_usernames = re.findall(r'\b([a-zA-Z0-9][a-zA-Z0-9_-]{2,38}[a-zA-Z0-9])\b', line)
                 for username in potential_usernames:
-                    # Avoid common false positives
                     if username.lower() not in ['email', 'phone', 'linkedin', 'twitter']:
                         if username and username not in found_usernames:
-                            # Check if this line also contains 'github'
                             if 'github' in line_lower:
                                 found_usernames.append(username)
                                 print(f"✅ Found GitHub username (contact section): {username}")
         
-        # Return the first valid username found
         if found_usernames:
             print(f"🐙 Using GitHub username: {found_usernames[0]}")
             return found_usernames[0]
@@ -99,31 +80,24 @@ class SemanticParser:
     
     def parse_resume_semantic(self, file_path):
         """Extract and understand resume content semantically"""
-        # Extract raw text
         text = self._extract_text(file_path)
-        
-        # Clean text
         text = self._clean_text(text)
         
-        # Extract GitHub username
         github_username = self.extract_github_username(text)
         if github_username:
             print(f"🐙 Found GitHub username: {github_username}")
         
-        # Extract semantic sections
-        sections = self._extract_sections_semantic(text)
-        
-        # Extract key points (important sentences)
+        sections  = self._extract_sections_semantic(text)
         key_points = self._extract_key_points(text)
         
         return {
-            'text': text,
-            'sections': sections,
-            'key_points': key_points,
+            'text'           : text,
+            'sections'       : sections,
+            'key_points'     : key_points,
             'github_username': github_username,
-            'has_github': github_username is not None,
-            'word_count': len(text.split()),
-            'char_count': len(text)
+            'has_github'     : github_username is not None,
+            'word_count'     : len(text.split()),
+            'char_count'     : len(text)
         }
     
     def calculate_similarity(self, embedding1, embedding2):
@@ -131,13 +105,9 @@ class SemanticParser:
         try:
             if not self.semantic_support:
                 return 50.0
-            
-            # Convert both to same dtype (float32)
             if embedding1.dtype != embedding2.dtype:
                 embedding1 = embedding1.astype('float32')
                 embedding2 = embedding2.astype('float32')
-            
-            # Now calculate similarity
             similarity = self.util.cos_sim(embedding1, embedding2).item() * 100
             return similarity
         except Exception as e:
@@ -171,54 +141,47 @@ class SemanticParser:
     
     def _clean_text(self, text):
         """Clean text while preserving meaning"""
-        # Remove extra whitespace
         text = re.sub(r'\s+', ' ', text)
-        
-        # Remove special characters but keep sentence structure
         text = re.sub(r'[^\w\s\.\,\-\/\+\#\@\(\)]', '', text)
-        
         return text.strip()
     
     def _extract_sections_semantic(self, text):
         """Extract sections using semantic understanding"""
         sections = {
-            'summary': '',
-            'experience': '',
-            'education': '',
-            'skills': '',
-            'projects': '',
+            'summary'       : '',
+            'experience'    : '',
+            'education'     : '',
+            'skills'        : '',
+            'projects'      : '',
             'certifications': ''
         }
         
         lines = text.split('\n')
         current_section = 'general'
-        section_text = []
+        section_text    = []
         
         section_indicators = {
-            'summary': ['summary', 'profile', 'about', 'objective'],
-            'experience': ['experience', 'work', 'employment', 'job'],
-            'education': ['education', 'academic', 'degree', 'university', 'college'],
-            'skills': ['skills', 'technologies', 'competencies', 'expertise'],
-            'projects': ['projects', 'personal projects', 'academic projects'],
+            'summary'       : ['summary', 'profile', 'about', 'objective'],
+            'experience'    : ['experience', 'work', 'employment', 'job'],
+            'education'     : ['education', 'academic', 'degree', 'university', 'college'],
+            'skills'        : ['skills', 'technologies', 'competencies', 'expertise'],
+            'projects'      : ['projects', 'personal projects', 'academic projects'],
             'certifications': ['certifications', 'certificates', 'licenses']
         }
         
         for line in lines:
             line_lower = line.lower().strip()
-            
-            # Check if this line starts a new section
             for section, indicators in section_indicators.items():
                 if any(ind in line_lower for ind in indicators) and len(line) < 50:
                     if current_section != 'general' and section_text:
                         sections[current_section] = ' '.join(section_text)
                     current_section = section
-                    section_text = []
+                    section_text    = []
                     break
             else:
                 if line.strip():
                     section_text.append(line)
         
-        # Save last section
         if current_section != 'general' and section_text:
             sections[current_section] = ' '.join(section_text)
         
@@ -229,7 +192,6 @@ class SemanticParser:
         sentences = text.split('.')
         key_points = []
         
-        # Indicators of important sentences
         importance_indicators = [
             'led', 'managed', 'created', 'developed', 'designed',
             'achieved', 'increased', 'decreased', 'improved',
@@ -241,8 +203,6 @@ class SemanticParser:
             sentence = sentence.strip()
             if len(sentence) < 20:
                 continue
-            
-            # Check if sentence contains important indicators
             sentence_lower = sentence.lower()
             for indicator in importance_indicators:
                 if indicator in sentence_lower:
@@ -253,21 +213,16 @@ class SemanticParser:
     
     def extract_experience_semantic(self, text):
         """Extract experience with semantic understanding"""
-        # Find experience section
-        sections = self._extract_sections_semantic(text)
-        exp_text = sections.get('experience', '')
-        
-        # Extract years
-        years = self._extract_years(text)
-        
-        # Extract descriptions
+        sections    = self._extract_sections_semantic(text)
+        exp_text    = sections.get('experience', '')
+        years       = self._extract_years(text)
         descriptions = []
+        
         sentences = exp_text.split('.')
         for sent in sentences:
             if len(sent.strip()) > 30:
                 descriptions.append(sent.strip())
         
-        # Determine quality
         if len(descriptions) > 5:
             quality = 'excellent'
         elif len(descriptions) > 3:
@@ -278,16 +233,13 @@ class SemanticParser:
             quality = 'basic'
         
         return {
-            'years': years,
+            'years'       : years,
             'descriptions': descriptions[:5],
-            'quality': quality
+            'quality'     : quality
         }
     
     def extract_email(self, text):
         """Extract email from resume text"""
-        import re
-        
-        # Common patterns where email appears
         email_indicators = [
             r'email[\s]*:[\s]*([^\s]+)',
             r'e-mail[\s]*:[\s]*([^\s]+)',
@@ -295,7 +247,6 @@ class SemanticParser:
             r'mail[\s]*:[\s]*([^\s]+)'
         ]
         
-        # Try indicator patterns first
         for pattern in email_indicators:
             match = re.search(pattern, text, re.IGNORECASE)
             if match:
@@ -303,7 +254,6 @@ class SemanticParser:
                 if '@' in potential and '.' in potential:
                     return potential
         
-        # Then try standard email regex
         email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
         emails = re.findall(email_pattern, text)
         if emails:
@@ -313,7 +263,6 @@ class SemanticParser:
     
     def _extract_years(self, text):
         """Extract years of experience"""
-        # Look for explicit statements
         patterns = [
             r'(\d+)[\+]?\s*years? of experience',
             r'experience of (\d+)[\+]?\s*years?',
@@ -329,20 +278,15 @@ class SemanticParser:
                 except:
                     pass
         
-        # Calculate from dates
         date_pattern = r'(\d{4})\s*[-–]\s*(\d{4}|present|current)'
-        matches = re.findall(date_pattern, text, re.IGNORECASE)
-        
-        total = 0
+        matches      = re.findall(date_pattern, text, re.IGNORECASE)
+        total        = 0
         current_year = datetime.now().year
         
         for start, end in matches:
             try:
                 start_year = int(start)
-                if end.lower() in ['present', 'current']:
-                    end_year = current_year
-                else:
-                    end_year = int(end)
+                end_year   = current_year if end.lower() in ['present', 'current'] else int(end)
                 total += (end_year - start_year)
             except:
                 continue
@@ -353,10 +297,8 @@ class SemanticParser:
         """Extract education with semantic understanding"""
         sections = self._extract_sections_semantic(text)
         edu_text = sections.get('education', '')
-        
         education = []
         
-        # Look for degrees
         degree_patterns = [
             (r'(bachelor|b\.?tech|b\.?e|b\.?sc)', 'bachelor'),
             (r'(master|m\.?tech|m\.?e|m\.?sc|mba)', 'master'),
@@ -370,7 +312,7 @@ class SemanticParser:
             for pattern, degree_type in degree_patterns:
                 if re.search(pattern, sentence_lower):
                     education.append({
-                        'degree': degree_type,
+                        'degree'     : degree_type,
                         'description': sentence.strip()
                     })
                     break

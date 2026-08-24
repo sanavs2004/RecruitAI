@@ -1,5 +1,8 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 import os
+
+from collections import defaultdict
+from flask import render_template
 import uuid
 import json
 from datetime import datetime, timedelta
@@ -10,19 +13,28 @@ from modules.interview_scheduler import InterviewScheduler
 from flask import send_file, abort
 import os
 import glob
-
+TESTS_FOLDER = os.path.join(os.path.dirname(__file__), 'tests_store')
+os.makedirs(TESTS_FOLDER, exist_ok=True)
+from modules.skill_test_generator import generate_skill_test
+from modules.skill_test_emailer   import send_test_email
+from modules.fit_predictor import _generate_synthetic_dataset, FEATURE_NAMES, train_and_save
+# from modules.fit_predictor_enhanced import EnhancedFitPredictor
 # Import Resume Screening modules
 from modules.resume_screening import ResumeScreeningEngine
+
 from modules.semantic_parser import SemanticParser
 from modules.semantic_matcher import SemanticMatcher
 from modules.semantic_ranker import SemanticRanker
 from modules.skill_extractor import SkillExtractor
 from modules.learning_path_generator import LearningPathGenerator
+# The import stays the same! (The class name is preserved for compatibility)
 from modules.learning_path_emailer import send_learning_path_email
 from modules.fit_predictor import FitPredictor
 from apscheduler.schedulers.background import BackgroundScheduler
 from auto_screener import auto_screener
 from analytics_engine import analytics_engine
+# from modules.fit_predictor_enhanced import EnhancedFitPredictor as FitPredictor
+
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -38,6 +50,7 @@ interview_scheduler = InterviewScheduler(Config)  # Moved here
 learning_path_gen = LearningPathGenerator(Config)
 fit_predictor = FitPredictor(os.path.join(Config.BASE_DIR, 'models'))
 scheduler = BackgroundScheduler()
+ANALYTICS_FILE = "analytics/all_screenings.json"
 
 # Store processing status
 processing_status = {}
@@ -53,7 +66,8 @@ os.makedirs(Config.JD_STORE_FOLDER, exist_ok=True)
 scheduler.add_job(
     func    = auto_screener.check_and_process_deadlines,
     trigger = 'interval',
-    hours   = 1,
+    minutes = 1,
+    # hours = 1,
     id      = 'auto_screener',
     name    = 'Auto Screen after Deadline',
     replace_existing = True
@@ -71,8 +85,20 @@ scheduler.add_job(
 scheduler.start()
 print("✅ AutoScreener scheduler started — checking deadlines every hour.")
  
- 
+@app.route('/api/status')
+def api_status():
+    return jsonify({"status": "ok"})
+def save_test(test: dict):
+    path = os.path.join(TESTS_FOLDER, f"{test['test_id']}.json")
+    with open(path, 'w') as f:
+        json.dump(test, f, indent=2)
 
+def load_test(test_id: str):
+    path = os.path.join(TESTS_FOLDER, f"{test_id}.json")
+    if not os.path.exists(path):
+        return None
+    with open(path, 'r') as f:
+        return json.load(f)
 
 # ======================
 # HOME ROUTE
@@ -162,38 +188,457 @@ def index():
 # ======================
 # JD MODULE ROUTES
 # ======================
-@app.route('/generate-jd', methods=['GET', 'POST'])
-def generate_jd():
-    """Generate job description using JD module"""
-    if request.method == 'POST':
-        data = request.get_json() if request.is_json else request.form
-        
-        role = data.get('role')
-        skills_input = data.get('skills', '')
-        experience = data.get('experience')
-        
-        if isinstance(skills_input, str):
-            skills = [s.strip() for s in skills_input.split(',') if s.strip()]
-        else:
-            skills = skills_input
-        
-        if not role or not skills or not experience:
-            return jsonify({'success': False, 'error': 'Please fill all fields'}), 400
-        
-        try:
-            jd_text = generate_job_description(role, skills, experience)
-            return jsonify({'success': True, 'jd_text': jd_text, 'message': 'Job description generated successfully'})
-        except Exception as e:
-            return jsonify({'success': False, 'error': str(e)}), 500
-    
-    return render_template('jd.html')
 
+# Replace your existing /generate-jd POST route with this one.
+@app.route('/generate-jd', methods=['GET', 'POST'])
+def generate_jd_route():
+    if request.method == 'GET':
+        return render_template('jd.html')
+
+    try:
+        data = request.get_json()
+
+        role       = data.get('role', '').strip()
+        skills_raw = data.get('skills', '')
+        experience = data.get('experience', '3-5')
+
+        if not role or not skills_raw:
+            return jsonify({'success': False, 'error': 'Role and skills are required'}), 400
+
+        if isinstance(skills_raw, list):
+            skills = [s.strip() for s in skills_raw if s.strip()]
+        else:
+            skills = [s.strip() for s in skills_raw.split(',') if s.strip()]
+
+        jd_text = generate_job_description(
+            role             = role,
+            skills           = skills,
+            experience       = experience,
+            responsibilities = data.get('responsibilities', '').strip() or None,
+            education        = data.get('education', 'Any'),
+            soft_skills      = data.get('soft_skills', '').strip() or None,
+            company_name     = data.get('company_name', '').strip() or None,
+            company_type     = data.get('company_type', 'startup'),
+            location         = data.get('location', '').strip() or None,
+            salary           = data.get('salary', '').strip() or None,
+        )
+
+        return jsonify({'success': True, 'jd_text': jd_text})
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+# @app.route('/generate-jd', methods=['POST'])
+# def generate_jd_route():
+#     try:
+#         data = request.get_json()
+
+#         role       = data.get('role', '').strip()
+#         skills_raw = data.get('skills', '')
+#         experience = data.get('experience', '3-5')
+
+#         if not role or not skills_raw:
+#             return jsonify({'success': False, 'error': 'Role and skills are required'}), 400
+
+#         if isinstance(skills_raw, list):
+#             skills = [s.strip() for s in skills_raw if s.strip()]
+#         else:
+#             skills = [s.strip() for s in skills_raw.split(',') if s.strip()]
+
+#         jd_text = generate_job_description(
+#             role             = role,
+#             skills           = skills,
+#             experience       = experience,
+#             responsibilities = data.get('responsibilities', '').strip() or None,
+#             education        = data.get('education', 'Any'),
+#             soft_skills      = data.get('soft_skills', '').strip() or None,
+#             company_name     = data.get('company_name', '').strip() or None,
+#             company_type     = data.get('company_type', 'startup'),
+#             location         = data.get('location', '').strip() or None,
+#             salary           = data.get('salary', '').strip() or None,
+#         )
+
+#         return jsonify({'success': True, 'jd_text': jd_text})
+
+#     except Exception as e:
+#         return jsonify({'success': False, 'error': str(e)}), 500
+#     return render_template('jd.html')
+# @app.route('/generate-jd', methods=['GET', 'POST'])
+# def generate_jd():
+#     """Generate job description using JD module"""
+#     if request.method == 'POST':
+#         data = request.get_json() if request.is_json else request.form
+        
+#         role = data.get('role')
+#         skills_input = data.get('skills', '')
+#         experience = data.get('experience')
+        
+#         if isinstance(skills_input, str):
+#             skills = [s.strip() for s in skills_input.split(',') if s.strip()]
+#         else:
+#             skills = skills_input
+        
+#         if not role or not skills or not experience:
+#             return jsonify({'success': False, 'error': 'Please fill all fields'}), 400
+        
+#         try:
+#             jd_text = generate_job_description(role, skills, experience)
+#             return jsonify({'success': True, 'jd_text': jd_text, 'message': 'Job description generated successfully'})
+#         except Exception as e:
+#             return jsonify({'success': False, 'error': str(e)}), 500
+    
+#     return render_template('jd.html')
+
+
+# ── Serve test page ────────────────────────────────────────────────────────
+@app.route('/skill-test/<test_id>')
+def skill_test_page(test_id):
+    return render_template('skill_test.html')
+
+def load_screenings():
+    """Load all screenings from JSON, return [] if file missing."""
+    if not os.path.exists(ANALYTICS_FILE):
+        return []
+    with open(ANALYTICS_FILE, "r") as f:
+        try:
+            data = json.load(f)
+            return data if isinstance(data, list) else []
+        except (json.JSONDecodeError, ValueError):
+            return []
+@app.route('/analytics')
+def analytics_view():
+    # ── Load data ────────────────────────────────────────────────────────
+    if not os.path.exists(ANALYTICS_FILE):
+        screenings = []
+    else:
+        with open(ANALYTICS_FILE, "r") as f:
+            try:
+                raw = json.load(f)
+                # Your JSON has a wrapper: {"screenings": [...]}
+                screenings = raw.get("screenings", raw) if isinstance(raw, dict) else raw
+            except (json.JSONDecodeError, ValueError):
+                screenings = []
+
+    # Filter out empty screenings
+    screenings = [s for s in screenings if s.get("total_candidates", 0) > 0]
+
+    # ── Overview KPIs ────────────────────────────────────────────────────
+    total_screenings = len(screenings)
+    total_candidates = sum(s.get("total_candidates", 0) for s in screenings)
+    avg_score_all    = round(
+        sum(s.get("average_score", 0) for s in screenings) / total_screenings, 1
+    ) if total_screenings else 0
+
+    # Estimate shortlisted/on_hold/rejected from individual screening results
+    shortlisted = 0
+    on_hold     = 0
+    rejected    = 0
+    for s in screenings:
+        sid = s.get("screening_id", "")
+        result = screening_engine.get_screening_result(sid)
+        if result and result.get("candidates"):
+            for c in result["candidates"]:
+                score = c.get("overall_score", c.get("final_score", 0))
+                if score >= 65:
+                    shortlisted += 1
+                elif score >= 50:
+                    on_hold += 1
+                else:
+                    rejected += 1
+
+    shortlist_rate = round(shortlisted / total_candidates * 100, 1) if total_candidates else 0
+
+    overview = {
+        "total_screenings": total_screenings,
+        "total_candidates": total_candidates,
+        "shortlisted":      shortlisted,
+        "on_hold":          on_hold,
+        "rejected":         rejected,
+        "shortlist_rate":   shortlist_rate,
+        "avg_score":        avg_score_all,
+    }
+
+    # ── Monthly Trends ───────────────────────────────────────────────────
+    monthly_buckets = defaultdict(lambda: {"screened": 0, "shortlisted": 0})
+    for s in screenings:
+        raw_date = s.get("date", "")
+        try:
+            month_key = datetime.fromisoformat(raw_date).strftime("%b %Y")
+        except (ValueError, TypeError):
+            month_key = "Unknown"
+        monthly_buckets[month_key]["screened"] += s.get("total_candidates", 0)
+
+    # Add shortlisted per month from candidate data
+    for s in screenings:
+        raw_date = s.get("date", "")
+        try:
+            month_key = datetime.fromisoformat(raw_date).strftime("%b %Y")
+        except (ValueError, TypeError):
+            month_key = "Unknown"
+        result = screening_engine.get_screening_result(s.get("screening_id", ""))
+        if result and result.get("candidates"):
+            shl = sum(1 for c in result["candidates"]
+                      if c.get("overall_score", c.get("final_score", 0)) >= 65)
+            monthly_buckets[month_key]["shortlisted"] += shl
+
+    def sort_key(mk):
+        try:
+            return datetime.strptime(mk, "%b %Y")
+        except ValueError:
+            return datetime.min
+
+    sorted_months = sorted(monthly_buckets.keys(), key=sort_key)
+    max_screened  = max((monthly_buckets[m]["screened"] for m in sorted_months), default=1)
+
+    monthly_trends = []
+    for m in sorted_months:
+        sc = monthly_buckets[m]["screened"]
+        sh = monthly_buckets[m]["shortlisted"]
+        monthly_trends.append({
+            "month":           m,
+            "screened":        sc,
+            "shortlisted":     sh,
+            "screened_pct":    round(sc / max_screened * 100),
+            "shortlisted_pct": round(sh / max_screened * 100),
+        })
+
+    # ── Top Job Positions ────────────────────────────────────────────────
+    pos_counts = defaultdict(int)
+    for s in screenings:
+        # Strip trailing date stamp (e.g. "Frontend Developer 20260227" → "Frontend Developer")
+        title = s.get("job_title", "Unknown")
+        clean = ' '.join(w for w in title.split() if not w.isdigit()).strip().title()
+        pos_counts[clean] += s.get("total_candidates", 0)
+
+    sorted_pos = sorted(pos_counts.items(), key=lambda x: x[1], reverse=True)[:8]
+    max_pos    = sorted_pos[0][1] if sorted_pos else 1
+    top_positions = [
+        {"title": t, "count": c, "pct": round(c / max_pos * 100)}
+        for t, c in sorted_pos
+    ]
+
+    # ── Average Score per Role ───────────────────────────────────────────
+    role_scores = defaultdict(list)
+    for s in screenings:
+        title = s.get("job_title", "Unknown")
+        clean = ' '.join(w for w in title.split() if not w.isdigit()).strip().title()
+        if s.get("average_score"):
+            role_scores[clean].append(s["average_score"])
+
+    avg_scores_raw = {
+        t: round(sum(scores) / len(scores), 1)
+        for t, scores in role_scores.items()
+    }
+    sorted_scores = sorted(avg_scores_raw.items(), key=lambda x: x[1], reverse=True)[:8]
+    avg_scores = [
+        {"title": t, "avg": a, "pct": round(a)}
+        for t, a in sorted_scores
+    ]
+
+    # ── Shortlist Rate per Role ──────────────────────────────────────────
+    role_totals      = defaultdict(int)
+    role_shortlisted = defaultdict(int)
+    for s in screenings:
+        title = s.get("job_title", "Unknown")
+        clean = ' '.join(w for w in title.split() if not w.isdigit()).strip().title()
+        role_totals[clean] += s.get("total_candidates", 0)
+        result = screening_engine.get_screening_result(s.get("screening_id", ""))
+        if result and result.get("candidates"):
+            role_shortlisted[clean] += sum(
+                1 for c in result["candidates"]
+                if c.get("overall_score", c.get("final_score", 0)) >= 65
+            )
+
+    shortlist_rates = []
+    for t in role_totals:
+        tot  = role_totals[t]
+        shl  = role_shortlisted[t]
+        rate = round(shl / tot * 100, 1) if tot else 0
+        shortlist_rates.append({
+            "title": t, "total": tot, "shortlisted": shl, "rate": rate, "pct": rate
+        })
+    shortlist_rates.sort(key=lambda x: x["rate"], reverse=True)
+    shortlist_rates = shortlist_rates[:8]
+
+    # ── Most Missing Skills ──────────────────────────────────────────────
+    # skill_gaps in your JSON is a dict: { "React": 2, "CSS": 1 }
+    skill_counts = defaultdict(int)
+    for s in screenings:
+        gaps = s.get("skill_gaps", {})
+        if isinstance(gaps, dict):
+            for skill, count in gaps.items():
+                # Skip garbage LLM output (multi-line, long sentences)
+                skill = skill.strip()
+                if len(skill) < 40 and '\n' not in skill and skill:
+                    skill_counts[skill] += count
+        elif isinstance(gaps, list):
+            for skill in gaps:
+                if isinstance(skill, str) and skill.strip():
+                    skill_counts[skill.strip()] += 1
+
+    sorted_skills = sorted(skill_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+    max_skill     = sorted_skills[0][1] if sorted_skills else 1
+    missing_skills = [
+        {"skill": sk, "count": c, "pct": round(c / max_skill * 100)}
+        for sk, c in sorted_skills
+    ]
+
+    # ── Recent Screenings (last 10) ──────────────────────────────────────
+    def parse_date(s):
+        try:
+            return datetime.fromisoformat(s.get("date", ""))
+        except (ValueError, TypeError):
+            return datetime.min
+
+    sorted_recent = sorted(screenings, key=parse_date, reverse=True)[:10]
+    recent = []
+    for s in sorted_recent:
+        tot    = s.get("total_candidates", 0)
+        sid    = s.get("screening_id", "")
+        result = screening_engine.get_screening_result(sid)
+        shl    = 0
+        if result and result.get("candidates"):
+            shl = sum(1 for c in result["candidates"]
+                      if c.get("overall_score", c.get("final_score", 0)) >= 65)
+        rate = round(shl / tot * 100) if tot else 0
+        recent.append({
+            "title":        s.get("job_title", "Unknown"),
+            "date":         s.get("date", "")[:10],
+            "total":        tot,
+            "shortlisted":  shl,
+            "avg_score":    round(s.get("average_score", 0), 1),
+            "rate":         rate,
+            "screening_id": sid,
+        })
+
+    # ── Chart.js payloads ────────────────────────────────────────────────
+    charts = {
+        "monthly_labels":      [m["month"]      for m in monthly_trends],
+        "monthly_screened":    [m["screened"]   for m in monthly_trends],
+        "monthly_shortlisted": [m["shortlisted"] for m in monthly_trends],
+        "pos_labels":          [p["title"]  for p in top_positions],
+        "pos_counts":          [p["count"]  for p in top_positions],
+        "score_labels":        [a["title"]  for a in avg_scores],
+        "score_values":        [a["avg"]    for a in avg_scores],
+        "sl_labels":           [r["title"]  for r in shortlist_rates],
+        "sl_rates":            [r["rate"]   for r in shortlist_rates],
+        "skill_labels":        [s["skill"]  for s in missing_skills],
+        "skill_counts":        [s["count"]  for s in missing_skills],
+        "donut_values":        [shortlisted, on_hold, rejected],
+    }
+
+    return render_template(
+        "analytics.html",
+        data={
+            "overview":        overview,
+            "monthly_trends":  monthly_trends,
+            "top_positions":   top_positions,
+            "avg_scores":      avg_scores,
+            "shortlist_rates": shortlist_rates,
+            "missing_skills":  missing_skills,
+            "recent":          recent,
+        },
+        charts=charts,
+    )
+ 
+
+# ── Get test data (called by frontend JS) ─────────────────────────────────
+@app.route('/api/skill-test/<test_id>')
+def get_skill_test(test_id):
+    test = load_test(test_id)
+    if not test:
+        return jsonify({'success': False, 'error': 'Test not found'})
+    if test.get('status') == 'completed':
+        return jsonify({'success': False, 'error': 'Test already completed'})
+    # Don't send correct answers to frontend!
+    safe_test = {k: v for k, v in test.items() if k != 'questions'}
+    safe_test['questions'] = [
+        {k: v for k, v in q.items() if k != 'correct'}
+        for q in test['questions']
+    ]
+    return jsonify({'success': True, 'test': safe_test})
+
+# ── Submit test answers ────────────────────────────────────────────────────
+@app.route('/api/skill-test/<test_id>/submit', methods=['POST'])
+def submit_skill_test(test_id):
+    test = load_test(test_id)
+    if not test:
+        return jsonify({'success': False, 'error': 'Test not found'})
+
+    data    = request.get_json()
+    answers = data.get('answers', {})
+
+    # Grade the test
+    correct = 0
+    total   = len(test['questions'])
+    for i, q in enumerate(test['questions']):
+        if answers.get(str(i)) == q['correct']:
+            correct += 1
+
+    score_percent = round((correct / total) * 100)
+    passed        = score_percent >= test['pass_mark']
+
+    # Update test record
+    test['status']        = 'completed'
+    test['score']         = correct
+    test['score_percent'] = score_percent
+    test['passed']        = passed
+    test['completed_at']  = datetime.now().isoformat()
+    save_test(test)
+
+    return jsonify({
+        'success'      : True,
+        'score_percent': score_percent,
+        'correct'      : correct,
+        'total'        : total,
+        'passed'       : passed
+    })
 
 @app.route('/jd-history')
 def jd_history():
     """View all generated job descriptions"""
     jds = get_all_jds()
     return render_template('jd_history.html', jds=jds)
+
+@app.route('/ml-report')
+def ml_report():
+    import json, os, pickle
+    import numpy as np
+    from modules.fit_predictor import _generate_synthetic_dataset, FEATURE_NAMES
+
+    models_folder = os.path.join(os.path.dirname(__file__), 'models')
+
+    # Load metadata
+    meta_path = os.path.join(models_folder, 'fit_predictor_meta.json')
+    with open(meta_path, 'r') as f:
+        meta = json.load(f)
+
+    # Load model and scaler
+    with open(os.path.join(models_folder, 'fit_predictor_ensemble.pkl'), 'rb') as f:
+        ensemble = pickle.load(f)
+    with open(os.path.join(models_folder, 'fit_predictor_scaler.pkl'), 'rb') as f:
+        scaler = pickle.load(f)
+
+    # Regenerate test data (same random seed = same data every time)
+    from sklearn.model_selection import train_test_split
+    from sklearn.metrics import confusion_matrix, classification_report
+
+    X, y = _generate_synthetic_dataset(2000)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y)
+
+    X_test_scaled = scaler.transform(X_test)
+    y_pred        = ensemble.predict(X_test_scaled)
+    y_proba       = ensemble.predict_proba(X_test_scaled)[:, 1]
+
+    cm     = confusion_matrix(y_test, y_pred).tolist()
+    report = classification_report(y_test, y_pred, output_dict=True)
+
+    return render_template('ml_report.html',
+        meta   = meta,
+        cm     = cm,
+        report = report,
+        features = FEATURE_NAMES
+    )
 
 
 @app.route('/jd/<filename>')
@@ -340,12 +785,48 @@ def ranking_results(screening_id):
                          candidates=result['candidates'])
 
 
+# @app.route('/screening-history')
+# def screening_history():
+#     """View all screenings"""
+#     screenings = screening_engine.get_all_screenings()
+#     return render_template('screening_history.html', screenings=screenings)
+
 @app.route('/screening-history')
 def screening_history():
-    """View all screenings"""
     screenings = screening_engine.get_all_screenings()
-    return render_template('screening_history.html', screenings=screenings)
 
+    for s in screenings:
+        result = screening_engine.get_screening_result(s['id'])
+
+        shortlisted_count = 0
+
+        if result and result.get('candidates'):
+            for c in result['candidates']:
+                try:
+                    score = float(c.get('overall_score', 0))
+                    if score >= 60:
+                        shortlisted_count += 1
+                except:
+                    continue
+
+        s['shortlisted_count'] = shortlisted_count
+        top_score = 0
+
+        if result and result.get('candidates'):
+            scores = []
+            for c in result['candidates']:
+                try:
+                    score = float(c.get('overall_score', 0))
+                    scores.append(score)
+                except:
+                    continue
+
+            if scores:
+                top_score = max(scores)
+
+        s['top_score'] = top_score
+
+    return render_template('screening_history.html', screenings=screenings)
 
 @app.route('/screening-status/<screening_id>')
 def screening_status(screening_id):
@@ -385,16 +866,16 @@ def api_jds():
     jds = get_all_jds()
     return jsonify(jds)
 
-@app.route('/learning-path/<candidate_id>')
-def learning_path(candidate_id):
-    """
-    Show the personalised learning path PAGE for a candidate.
-    Linked from the ranking results page via the 📚 button.
-    """
-    # Try to load an already-generated path first (saved from screening)
-    existing = learning_path_gen.get_learning_path(candidate_id)
-    if existing:
-        return render_template('learning_path.html', learning_path=existing)
+# @app.route('/learning-path/<candidate_id>')
+# def learning_path(candidate_id):
+#     """
+#     Show the personalised learning path PAGE for a candidate.
+#     Linked from the ranking results page via the 📚 button.
+#     """
+#     # Try to load an already-generated path first (saved from screening)
+#     existing = learning_path_gen.get_learning_path(candidate_id)
+#     if existing:
+#         return render_template('learning_path.html', learning_path=existing)
 
     # Not generated yet — find candidate and generate now
     screenings = screening_engine.get_all_screenings()
@@ -409,44 +890,105 @@ def learning_path(candidate_id):
     return render_template('error.html', message='Candidate not found'), 404
 
 
-@app.route('/api/resend-learning-path/<candidate_id>', methods=['POST'])
-def resend_learning_path(candidate_id):
-    """
-    Recruiter manually re-sends the learning path email for a candidate.
-    Called from the ranking results page via a button.
-    """
+# @app.route('/api/resend-learning-path/<candidate_id>', methods=['POST'])
+# def resend_learning_path(candidate_id):
+#     """
+#     Recruiter manually re-sends the learning path email for a candidate.
+#     Called from the ranking results page via a button.
+#     """
+#     screenings = screening_engine.get_all_screenings()
+#     for screening in screenings:
+#         result = screening_engine.get_screening_result(screening['id'])
+#         if result:
+#             for candidate in result.get('candidates', []):
+#                 if candidate.get('candidate_id') == candidate_id:
+#                     # Get or generate learning path
+#                     lp = learning_path_gen.get_learning_path(candidate_id)
+#                     if not lp:
+#                         lp = learning_path_gen.generate(candidate, result['job'])
+
+#                     # Send email
+#                     sent = send_learning_path_email(candidate, result['job'], lp, Config)
+#                     return jsonify({
+#                         'success': sent,
+#                         'message': f"Learning path emailed to {candidate.get('email')}" if sent
+#                                    else 'Failed to send — check SMTP settings or candidate has no email'
+#                     })
+
+#     return jsonify({'success': False, 'error': 'Candidate not found'}), 404
+
+
+# 1. GENERATE bulk learning paths for rejected candidates
+@app.route('/generate-learning-paths/<screening_id>')
+def generate_learning_paths(screening_id):
+    result = screening_engine.get_screening_result(screening_id)
+    if not result:
+        return render_template('error.html', message='Screening not found'), 404
+
+    rejected = [c for c in result['candidates'] if c.get('overall_score', 0) < 50]
+    if not rejected:
+        return render_template('error.html', message='No rejected candidates found'), 404
+
+    generated_paths = []
+    for candidate in rejected:
+        lp = learning_path_gen.generate(candidate, result['job'])
+        generated_paths.append(lp)
+
+    return render_template('learning_paths_generated.html',
+                           paths=generated_paths,
+                           count=len(generated_paths),
+                           screening_id=screening_id)
+
+
+# 2. VIEW a single candidate's learning path page
+@app.route('/learning-path/<candidate_id>')
+def learning_path(candidate_id):
+    existing = learning_path_gen.get_learning_path(candidate_id)
+    if existing:
+        return render_template('learning_path.html', learning_path=existing)
+
     screenings = screening_engine.get_all_screenings()
     for screening in screenings:
         result = screening_engine.get_screening_result(screening['id'])
         if result:
             for candidate in result.get('candidates', []):
                 if candidate.get('candidate_id') == candidate_id:
-                    # Get or generate learning path
+                    lp = learning_path_gen.generate(candidate, result['job'])
+                    return render_template('learning_path.html', learning_path=lp)
+
+    return render_template('error.html', message='Candidate not found'), 404
+
+
+# 3. RESEND learning path email
+@app.route('/api/resend-learning-path/<candidate_id>', methods=['POST'])
+def resend_learning_path(candidate_id):
+    screenings = screening_engine.get_all_screenings()
+    for screening in screenings:
+        result = screening_engine.get_screening_result(screening['id'])
+        if result:
+            for candidate in result.get('candidates', []):
+                if candidate.get('candidate_id') == candidate_id:
                     lp = learning_path_gen.get_learning_path(candidate_id)
                     if not lp:
                         lp = learning_path_gen.generate(candidate, result['job'])
-
-                    # Send email
                     sent = send_learning_path_email(candidate, result['job'], lp, Config)
                     return jsonify({
                         'success': sent,
-                        'message': f"Learning path emailed to {candidate.get('email')}" if sent
-                                   else 'Failed to send — check SMTP settings or candidate has no email'
+                        'message': f"Sent to {candidate.get('email')}" if sent else 'Failed to send'
                     })
-
     return jsonify({'success': False, 'error': 'Candidate not found'}), 404
 
 
-@app.route('/api/learning-path/<candidate_id>')
-def api_get_learning_path(candidate_id):
-    """
-    Returns the learning path JSON for a candidate.
-    Useful for debugging or future frontend use.
-    """
-    lp = learning_path_gen.get_learning_path(candidate_id)
-    if lp:
-        return jsonify(lp)
-    return jsonify({'error': 'Learning path not found'}), 404
+# @app.route('/api/learning-path/<candidate_id>')
+# def api_get_learning_path(candidate_id):
+#     """
+#     Returns the learning path JSON for a candidate.
+#     Useful for debugging or future frontend use.
+#     """
+#     lp = learning_path_gen.get_learning_path(candidate_id)
+#     if lp:
+#         return jsonify(lp)
+#     return jsonify({'error': 'Learning path not found'}), 404
 
 @app.route('/api/ml-model-info')
 def api_ml_model_info():
@@ -671,7 +1213,6 @@ def api_candidate_apply():
 
 @app.route('/applications')
 def view_applications():
-    """Recruiter view — all candidate self-applications."""
     applications_folder = os.path.join(Config.BASE_DIR, 'applications')
     apps = []
 
@@ -680,11 +1221,32 @@ def view_applications():
             if file.endswith('.json'):
                 try:
                     with open(os.path.join(applications_folder, file)) as f:
-                        apps.append(json.load(f))
+                        app_data = json.load(f)
+                    # Ensure screening_id always exists
+                    app_data.setdefault('screening_id', '')
+                    app_data.setdefault('status', 'pending')
+                    apps.append(app_data)
                 except:
                     pass
 
     return render_template('applications.html', applications=apps)
+
+# @app.route('/applications')
+# def view_applications():
+#     """Recruiter view — all candidate self-applications."""
+#     applications_folder = os.path.join(Config.BASE_DIR, 'applications')
+#     apps = []
+
+#     if os.path.exists(applications_folder):
+#         for file in sorted(os.listdir(applications_folder), reverse=True):
+#             if file.endswith('.json'):
+#                 try:
+#                     with open(os.path.join(applications_folder, file)) as f:
+#                         apps.append(json.load(f))
+#                 except:
+#                     pass
+
+#     return render_template('applications.html', applications=apps)
 
 
 # ======================
@@ -720,6 +1282,29 @@ def get_candidate_details(candidate_id):
                     return jsonify(candidate)
     
     return jsonify({'error': 'Candidate not found'}), 404
+
+
+@app.route('/api/application/<candidate_id>', methods=['DELETE'])
+def api_delete_application(candidate_id):
+    """Delete a single application by candidate_id."""
+    applications_folder = os.path.join(Config.BASE_DIR, 'applications')
+    app_file = os.path.join(applications_folder, f"{candidate_id}.json")
+
+    if not os.path.exists(app_file):
+        return jsonify({'success': False, 'error': 'Application not found'}), 404
+
+    try:
+        # Also delete the uploaded resume file
+        with open(app_file) as f:
+            app_data = json.load(f)
+        resume_path = app_data.get('resume_path', '')
+        if resume_path and os.path.exists(resume_path):
+            os.remove(resume_path)
+
+        os.remove(app_file)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/debug-candidate/<screening_id>')
@@ -986,18 +1571,18 @@ def select_slot(token):
     
     return render_template('slot_selection.html', token=token)
 
-@app.route('/analytics')
-def analytics():
-    """Full recruitment analytics dashboard."""
-    data = analytics_engine.get_dashboard_data()
-    return render_template('analytics.html', data=data)
+# @app.route('/analytics')
+# def analytics():
+#     """Full recruitment analytics dashboard."""
+#     data = analytics_engine.get_dashboard_data()
+#     return render_template('analytics.html', data=data)
  
  
-@app.route('/api/analytics')
-def api_analytics():
-    """Analytics data as JSON — for future use."""
-    data = analytics_engine.get_dashboard_data()
-    return jsonify(data)
+# @app.route('/api/analytics')
+# def api_analytics():
+#     """Analytics data as JSON — for future use."""
+#     data = analytics_engine.get_dashboard_data()
+#     return jsonify(data)
 
 @app.route('/api/slot-groups')
 def api_slot_groups():
@@ -1006,18 +1591,51 @@ def api_slot_groups():
 
 @app.route('/model-report')
 def model_report():
-    """Show ML model training report with confusion matrix."""
-    import json
-    report_path = os.path.join(Config.BASE_DIR, 'models', 'training_report.json')
-    matrix_path = os.path.join(Config.BASE_DIR, 'models', 'confusion_matrix.png')
- 
-    report = None
-    if os.path.exists(report_path):
-        with open(report_path) as f:
-            report = json.load(f)
- 
-    has_matrix = os.path.exists(matrix_path)
-    return render_template('model_report.html', report=report, has_matrix=has_matrix)
+    import json, os, pickle
+    import numpy as np
+    from modules.fit_predictor import _generate_synthetic_dataset, FEATURE_NAMES, train_and_save
+    from sklearn.model_selection import train_test_split
+    from sklearn.metrics import confusion_matrix, classification_report
+
+    models_folder = os.path.join(os.path.dirname(__file__), 'models')
+    meta_path     = os.path.join(models_folder, 'fit_predictor_meta.json')
+
+    # ── If model not trained yet, train it now ────────────────────────
+    if not os.path.exists(meta_path):
+        print("⚙️ Model not found — training now...")
+        train_and_save(models_folder)
+
+    # ── Load metadata ─────────────────────────────────────────────────
+    with open(meta_path, 'r') as f:
+        meta = json.load(f)
+
+    # ── Load model + scaler ───────────────────────────────────────────
+    ensemble_path = os.path.join(models_folder, 'fit_predictor_ensemble.pkl')
+    scaler_path   = os.path.join(models_folder, 'fit_predictor_scaler.pkl')
+
+    with open(ensemble_path, 'rb') as f:
+        ensemble = pickle.load(f)
+    with open(scaler_path, 'rb') as f:
+        scaler = pickle.load(f)
+
+    # ── Regenerate test split (same seed = same data always) ──────────
+    X, y = _generate_synthetic_dataset(2000)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
+    )
+
+    X_test_scaled = scaler.transform(X_test)
+    y_pred        = ensemble.predict(X_test_scaled)
+
+    cm     = confusion_matrix(y_test, y_pred).tolist()
+    report = classification_report(y_test, y_pred, output_dict=True)
+
+    return render_template('model_report.html',
+        meta     = meta,
+        cm       = cm,
+        report   = report,
+        features = FEATURE_NAMES
+    )
  
  
 @app.route('/models/confusion_matrix.png')
@@ -1027,7 +1645,41 @@ def serve_confusion_matrix():
     if os.path.exists(matrix_path):
         return send_file(matrix_path, mimetype='image/png')
     return '', 404
+@app.route('/xgboost-tree')
+def xgboost_tree():
+    import os
+    import json
+    import pickle
+    import numpy as np
+    from modules.fit_predictor import FEATURE_NAMES, FEATURE_LABELS
 
+    models_folder = os.path.join(os.path.dirname(__file__), 'models')
+    xgb_path      = os.path.join(models_folder, 'fit_predictor_xgb.pkl')
+    meta_path     = os.path.join(models_folder, 'fit_predictor_meta.json')
+
+    if not os.path.exists(xgb_path):
+        return "Model not trained yet. Run a screening first.", 404
+
+    with open(xgb_path, 'rb') as f:
+        xgb_model = pickle.load(f)
+
+    with open(meta_path, 'r') as f:
+        meta = json.load(f)
+
+    # Get feature importance
+    importance = xgb_model.feature_importances_
+    features   = list(zip(FEATURE_NAMES, importance))
+    features.sort(key=lambda x: x[1], reverse=True)
+
+    # Get tree dump (first 3 trees as text)
+    tree_dump = xgb_model.get_booster().get_dump()[:3]
+
+    return render_template('xgboost_tree.html',
+        features  = features,
+        labels    = FEATURE_LABELS,
+        tree_dump = tree_dump,
+        meta      = meta
+    )
 
 @app.route('/api/create-interview-slots', methods=['POST'])
 def api_create_interview_slots():
@@ -1358,78 +2010,128 @@ from modules.learning_path_generator import LearningPathGenerator
 # Initialize learning path generator
 learning_path_gen = LearningPathGenerator(Config)
 
-@app.route('/generate-learning-paths/<screening_id>')
-def generate_learning_paths(screening_id):
-    """Generate learning paths for all rejected candidates in a screening"""
-    # Get screening results
-    result = screening_engine.get_screening_result(screening_id)
+# @app.route('/generate-learning-paths/<screening_id>')
+# def generate_learning_paths(screening_id):
+#     """Generate learning paths for all rejected candidates in a screening"""
+#     # Get screening results
+#     result = screening_engine.get_screening_result(screening_id)
     
-    if not result:
-        return render_template('error.html', message='Screening not found'), 404
+#     if not result:
+#         return render_template('error.html', message='Screening not found'), 404
     
-    # Find rejected candidates (score < 50)
-    rejected = [c for c in result['candidates'] if c.get('overall_score', 0) < 50]
+#     # Find rejected candidates (score < 50)
+#     rejected = [c for c in result['candidates'] if c.get('overall_score', 0) < 50]
     
-    if not rejected:
-        return render_template('error.html', message='No rejected candidates found'), 404
+#     if not rejected:
+#         return render_template('error.html', message='No rejected candidates found'), 404
     
-    generated_paths = []
-    for candidate in rejected:
-        learning_path = learning_path_gen.generate_learning_path(candidate, result['job'])
-        generated_paths.append(learning_path)
+#     generated_paths = []
+#     for candidate in rejected:
+#         learning_path = learning_path_gen.generate_learning_path(candidate, result['job'])
+#         generated_paths.append(learning_path)
         
-        # Send email if candidate has email
-        if candidate.get('email'):
-            base_url = request.host_url.rstrip('/')
-            learning_path_gen.send_learning_path_email(candidate['email'], learning_path, base_url)
+#         # Send email if candidate has email
+#         if candidate.get('email'):
+#             base_url = request.host_url.rstrip('/')
+#             learning_path_gen.send_learning_path_email(candidate['email'], learning_path, base_url)
     
-    return render_template('learning_paths_generated.html', 
-                         paths=generated_paths,
-                         count=len(generated_paths),
-                         screening_id=screening_id)
+#     return render_template('learning_paths_generated.html', 
+#                          paths=generated_paths,
+#                          count=len(generated_paths),
+#                          screening_id=screening_id)
 
-@app.route('/learning-path/<candidate_id>')
-def view_learning_path(candidate_id):
-    """View learning path for a candidate"""
-    learning_path = learning_path_gen.get_learning_path(candidate_id)
+# @app.route('/learning-path/<candidate_id>')
+# def view_learning_path(candidate_id):
+#     """View learning path for a candidate"""
+#     learning_path = learning_path_gen.get_learning_path(candidate_id)
     
-    if not learning_path:
-        return render_template('error.html', message='Learning path not found'), 404
+#     if not learning_path:
+#         return render_template('error.html', message='Learning path not found'), 404
     
-    return render_template('learning_path.html', path=learning_path)
+#     return render_template('learning_path.html', path=learning_path)
 
-@app.route('/api/generate-learning-path/<candidate_id>', methods=['POST'])
-def api_generate_learning_path(candidate_id):
-    """API endpoint to generate learning path for a specific candidate"""
-    data = request.get_json()
+
+@app.route('/api/notifications')
+def api_notifications():
+    """Return unread auto-screen completion notifications."""
+    log_folder = os.path.join(Config.BASE_DIR, 'auto_screen_logs')
+    notifications = []
+
+    if os.path.exists(log_folder):
+        for file in sorted(os.listdir(log_folder), reverse=True)[:10]:
+            if not file.endswith('.json'):
+                continue
+            try:
+                with open(os.path.join(log_folder, file)) as f:
+                    log = json.load(f)
+                if log.get('screening_id') and log.get('status') != 'error':
+                    notifications.append({
+                        'id'           : log.get('log_id', file.replace('.json','')),
+                        'job_title'    : log.get('job_title', 'Unknown Role'),
+                        'candidates'   : log.get('total', 0),
+                        'screening_id' : log.get('screening_id'),
+                        'triggered_at' : log.get('triggered_at', ''),
+                        'read'         : log.get('read', False)
+                    })
+            except:
+                pass
+
+    unread = sum(1 for n in notifications if not n['read'])
+    return jsonify({'notifications': notifications, 'unread': unread})
+
+
+@app.route('/api/notifications/mark-read', methods=['POST'])
+def api_notifications_mark_read():
+    """Mark all notifications as read."""
+    log_folder = os.path.join(Config.BASE_DIR, 'auto_screen_logs')
+    if os.path.exists(log_folder):
+        for file in os.listdir(log_folder):
+            if not file.endswith('.json'):
+                continue
+            try:
+                path = os.path.join(log_folder, file)
+                with open(path) as f:
+                    log = json.load(f)
+                if not log.get('read'):
+                    log['read'] = True
+                    with open(path, 'w') as f:
+                        json.dump(log, f, indent=2)
+            except:
+                pass
+    return jsonify({'success': True})
+
+# @app.route('/api/generate-learning-path/<candidate_id>', methods=['POST'])
+# def api_generate_learning_path(candidate_id):
+#     """API endpoint to generate learning path for a specific candidate"""
+#     data = request.get_json()
     
-    # Find candidate in screenings
-    screenings = screening_engine.get_all_screenings()
-    candidate_data = None
-    job_data = None
+#     # Find candidate in screenings
+#     screenings = screening_engine.get_all_screenings()
+#     candidate_data = None
+#     job_data = None
     
-    for screening in screenings:
-        result = screening_engine.get_screening_result(screening['id'])
-        if result and result.get('candidates'):
-            for c in result['candidates']:
-                if c.get('candidate_id') == candidate_id:
-                    candidate_data = c
-                    job_data = result['job']
-                    break
-        if candidate_data:
-            break
+#     for screening in screenings:
+#         result = screening_engine.get_screening_result(screening['id'])
+#         if result and result.get('candidates'):
+#             for c in result['candidates']:
+#                 if c.get('candidate_id') == candidate_id:
+#                     candidate_data = c
+#                     job_data = result['job']
+#                     break
+#         if candidate_data:
+#             break
     
-    if not candidate_data:
-        return jsonify({'success': False, 'error': 'Candidate not found'}), 404
+#     if not candidate_data:
+#         return jsonify({'success': False, 'error': 'Candidate not found'}), 404
     
-    # Generate learning path
-    learning_path = learning_path_gen.generate_learning_path(candidate_data, job_data)
+#     # Generate learning path
+#     learning_path = learning_path_gen.generate_learning_path(candidate_data, job_data)
     
-    return jsonify({
-        'success': True,
-        'learning_path': learning_path,
-        'view_url': f"/learning-path/{candidate_id}"
-    })
+#     return jsonify({
+#         'success': True,
+#         'learning_path': learning_path,
+#         'view_url': f"/learning-path/{candidate_id}"
+#     })
 
 
 # ======================

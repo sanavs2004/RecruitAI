@@ -1,8 +1,0 @@
-Role Summary: Entry-level Java Developer position offering on-the-job training and opportunities for growth within the team.
-Key Responsibilities: - Collaborate with cross-functional teams to deliver efficient backend solutions using java technology stacks, including sql database management via mysql.
-- Handle minor issues (oops) swiftly while maintaining code quality standards and data structure integrity.
-Required Qualifications:
-- Bachelor’s degree in Computer Science or related field; strong foundation in programming concepts is highly preferred but not mandatory given the learning opportunity provided by this role, 1–2 years of experience with java technology stack including mysql database skills are required for this entry-level position.
-- Basic understanding of c++ to help navigate through complex data manipulation processes and troubleshooting issues on a foundational level as needed during the learning curve in this growth opportunity role is advantageous but not mandatory given our robust team culture that encourages continuous skill development,
-Job Title: Java Developer
-Experience Required: Entry-level with potential for advancement after completion of initial training period.

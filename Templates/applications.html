@@ -3,128 +3,590 @@
 <head>
     <meta charset="UTF-8">
     <title>Applications — RecruitAI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; padding: 40px 24px; }
+        :root {
+            /* Premium Grey System */
+            --bg-main:   #121212;   /* Deep Gunmetal */
+            --bg-card:   #1a1a1a;   /* Surface Grey */
+            --bg-inset:  #0d0d0d;   /* Darker Inset */
+            --white:     #f5f5f5;   /* Primary Text */
+            --border:    #262626;   /* Subtle Border */
+            
+            /* Accents */
+            --accent:    #ffffff;   /* Pure White for buttons/highlights */
+            --muted:     #707070;   /* Secondary Text */
+            --low:       #404040;   /* Teritary elements */
+            
+            /* Status Colors (Subtle Tints) */
+            --green:     #10b981;
+            --green-bg:  rgba(16, 185, 129, 0.1);
+            --red:       #ef4444;
+            --red-bg:    rgba(239, 68, 68, 0.1);
+            --amber:     #f59e0b;
+            --amber-bg:  rgba(245, 158, 11, 0.1);
+            --sky:       #0ea5e9;
+            --sky-bg:    rgba(14, 165, 233, 0.1);
 
-        .header {
-            max-width: 900px;
-            margin: 0 auto 28px;
+            --sh:        0 10px 30px rgba(0,0,0,0.4);
         }
 
-        .header h1 { font-size: 24px; color: #111827; margin-bottom: 4px; }
-        .header p  { font-size: 14px; color: #6b7280; }
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+        body { 
+            font-family:'DM Sans', sans-serif; 
+            background:var(--bg-main); 
+            color:var(--white); 
+            min-height:100vh; 
+        }
 
+        /* ── Navbar ── */
+        .topnav {
+            height:64px; background:var(--bg-main); border-bottom:1px solid var(--border);
+            display:flex; align-items:center; padding:0 32px; gap:16px;
+            position:sticky; top:0; z-index:100;
+            backdrop-filter: blur(10px);
+        }
+        .nav-logo {
+            width:32px; height:32px;
+            background: var(--white);
+            border-radius:8px; display:flex; align-items:center; justify-content:center;
+            font-size:15px; color: black;
+        }
+        .nav-brand { font-family:'Syne',sans-serif; font-size:18px; font-weight:800; color:var(--white); letter-spacing: -0.5px; }
+        .nav-brand span { color: var(--muted); }
+        
+        .nav-back {
+            margin-left:auto; font-size:13px; color:var(--muted); text-decoration:none;
+            padding:8px 16px; border-radius:8px; border: 1px solid var(--border); transition: 0.2s;
+        }
+        .nav-back:hover { background:var(--bg-card); color:var(--white); border-color: var(--low); }
+
+        /* ── Page ── */
+        .page { max-width:1100px; margin:0 auto; padding:40px 32px; }
+
+        /* ── Header ── */
+        .page-hd {
+            display:flex; align-items:flex-start; justify-content:space-between;
+            margin-bottom:32px; flex-wrap:wrap; gap:16px;
+        }
+        .page-title { font-family:'Syne',sans-serif; font-size:28px; font-weight:800; color:var(--white); }
+        .page-sub { font-size:13px; color:var(--muted); margin-top:6px; }
+
+        .btn-delete-selected {
+            display:none; padding:10px 20px; background:var(--red-bg); color:var(--red);
+            border:1px solid rgba(239, 68, 68, 0.2); border-radius:8px;
+            font-size:12px; font-weight:700; cursor:pointer; text-transform: uppercase;
+        }
+        .btn-delete-selected.visible { display:flex; align-items:center; gap:8px; }
+
+        /* ── Stats Strip ── */
+        .stats-strip { display:flex; gap:16px; margin-bottom:32px; }
+        .stat-pill {
+            background:var(--bg-card); border:1px solid var(--border);
+            border-radius:12px; padding:16px 24px; flex: 1;
+            box-shadow: var(--sh);
+        }
+        .stat-pill-val { font-family:'Syne',sans-serif; font-size:24px; font-weight:800; color:var(--white); }
+        .stat-pill-lbl { font-size:11px; color:var(--muted); font-weight:700; text-transform: uppercase; margin-top: 4px; }
+
+        /* ── Filters ── */
+        .filters-bar {
+            background:var(--bg-card); border:1px solid var(--border);
+            border-radius:12px; padding:20px;
+            display:flex; gap:16px; align-items:flex-end; margin-bottom:24px;
+        }
+        .filter-label { font-size:10px; font-weight:800; color:var(--muted); text-transform:uppercase; margin-bottom:6px; }
+        .filter-input, .filter-select {
+            height:40px; padding:0 14px;
+            border:1px solid var(--border); border-radius:8px;
+            background:var(--bg-inset); color:var(--white);
+            font-size:13px; outline:none; transition: 0.2s;
+        }
+        .filter-input:focus, .filter-select:focus { border-color: var(--muted); }
+
+        /* ── Table Card ── */
         .card {
-            max-width: 900px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 14px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
-            overflow: hidden;
+            background:var(--bg-card); border:1px solid var(--border);
+            border-radius:16px; box-shadow:var(--sh); overflow:hidden;
         }
-
-        table { width: 100%; border-collapse: collapse; }
-
-        thead { background: #f8fafc; }
+        table { width:100%; border-collapse:collapse; }
+        thead { background: var(--bg-inset); }
         th {
-            padding: 14px 18px;
-            text-align: left;
-            font-size: 12px;
-            font-weight: 600;
-            color: #6b7280;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-bottom: 1px solid #e5e7eb;
+            padding:16px; text-align:left; font-size:11px; font-weight:800;
+            color:var(--muted); text-transform:uppercase; letter-spacing:1px;
+            border-bottom:1px solid var(--border);
         }
+        td { padding:16px; font-size:14px; color:var(--text-med); border-bottom:1px solid var(--border); }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+        
+        .candidate-name { font-weight:600; color:var(--white); }
+        .candidate-id { font-size:11px; color:var(--muted); font-family:monospace; }
 
-        td {
-            padding: 14px 18px;
-            font-size: 14px;
-            color: #374151;
-            border-bottom: 1px solid #f3f4f6;
-        }
-
-        tr:last-child td { border-bottom: none; }
-        tr:hover td { background: #f9fafb; }
-
+        /* Status Badges */
         .badge {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
+            padding:4px 10px; border-radius:100px; font-size:11px; font-weight:700; text-transform: uppercase;
+        }
+        .badge-pending  { background:var(--amber-bg); color:var(--amber); }
+        .badge-screened { background:var(--green-bg); color:var(--green); }
+        
+        .role-tag {
+            padding:4px 10px; background:var(--bg-inset); color:var(--white);
+            border-radius:6px; font-size:11px; border: 1px solid var(--border);
         }
 
-        .badge-pending  { background: #fef3c7; color: #92400e; }
-        .badge-screened { background: #d1fae5; color: #065f46; }
-
-        .btn-screen {
-            padding: 6px 14px;
-            background: #1a7bf2;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
+        /* ── Buttons ── */
+        .btn-view, .btn-result, .btn-del {
+            padding:6px 14px; border-radius:6px; font-size:12px; font-weight:700;
+            text-decoration:none; cursor:pointer; transition:0.2s; display: inline-block;
         }
+        .btn-view { background: var(--bg-inset); border:1px solid var(--border); color:var(--white); }
+        .btn-view:hover { background: var(--low); }
+        
+        .btn-result { background: var(--white); color: black; border: none; }
+        .btn-result:hover { background: #fff; transform: translateY(-1px); }
 
-        .empty {
-            text-align: center;
-            padding: 60px 20px;
-            color: #9ca3af;
+        /* ── Pagination ── */
+        .pagination {
+            padding:16px 20px; border-top:1px solid var(--border);
+            display:flex; align-items:center; justify-content:space-between;
+            font-size:13px; color:var(--muted);
         }
+        .page-btn {
+            width:32px; height:32px; border:1px solid var(--border);
+            border-radius:6px; background:var(--bg-inset); color:var(--white);
+            cursor:pointer; display:flex; align-items:center; justify-content:center;
+        }
+        .page-btn.active { background:var(--white); color:black; font-weight:800; border-color: var(--white); }
 
-        .empty .icon { font-size: 40px; margin-bottom: 12px; }
-    </style>
+        /* ── Modal & Toast ── */
+        .modal { background:var(--bg-card); border: 1px solid var(--border); border-radius:16px; padding:32px; width:400px; }
+        .modal-title { font-family:'Syne',sans-serif; color:var(--white); font-size:20px; margin-bottom:12px; }
+        .toast { background:var(--white); color:black; border-radius:8px; font-weight:700; }
+
+        @keyframes fadeUp { from{opacity:0;transform:translateY(15px);}to{opacity:1;transform:none;} }
+        .page > * { animation:fadeUp 0.5s ease both; }
+</style>
 </head>
 <body>
 
-<div class="header">
-    <h1>📥 Candidate Applications</h1>
-    <p>Resumes submitted via the public apply portal.</p>
+<!-- Navbar -->
+<nav class="topnav">
+    <div class="nav-logo">🎯</div>
+    <div class="nav-brand">Recruit<span>AI</span></div>
+    <a href="/" class="nav-back">← Dashboard</a>
+</nav>
+
+<div class="page">
+
+    <!-- Header -->
+    <div class="page-hd">
+        <div>
+            <div class="page-title">📥 Candidate <span>Applications</span></div>
+            <div class="page-sub">Resumes submitted via the public apply portal</div>
+        </div>
+        <div class="hd-actions">
+            <button class="btn-delete-selected" id="bulkDeleteBtn" onclick="openBulkDelete()">
+                🗑 Delete Selected (<span id="selectedCount">0</span>)
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats strip -->
+    <div class="stats-strip" id="statsStrip">
+        <div class="stat-pill">
+            <div>
+                <div class="stat-pill-val" id="statTotal">0</div>
+                <div class="stat-pill-lbl">Total</div>
+            </div>
+        </div>
+        <div class="stat-pill">
+            <div>
+                <div class="stat-pill-val" id="statPending" style="color:var(--amber)">0</div>
+                <div class="stat-pill-lbl">Pending</div>
+            </div>
+        </div>
+        <div class="stat-pill">
+            <div>
+                <div class="stat-pill-val" id="statScreened" style="color:var(--green)">0</div>
+                <div class="stat-pill-lbl">Screened</div>
+            </div>
+        </div>
+        <div class="stat-pill">
+            <div>
+                <div class="stat-pill-val" id="statRoles" style="color:var(--purple)">0</div>
+                <div class="stat-pill-lbl">Roles</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-bar">
+        <div class="filter-group">
+            <div class="filter-label">Search</div>
+            <input class="filter-input" id="searchInput" type="text" placeholder="Name or email…" oninput="applyFilters()">
+        </div>
+        <div class="filter-group">
+            <div class="filter-label">Job Role</div>
+            <select class="filter-select" id="roleFilter" onchange="applyFilters()">
+                <option value="">All Roles</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <div class="filter-label">Status</div>
+            <select class="filter-select" id="statusFilter" onchange="applyFilters()">
+                <option value="">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="screened">Screened</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <div class="filter-label">From Date</div>
+            <input class="filter-input" id="dateFrom" type="date" style="min-width:140px" oninput="applyFilters()">
+        </div>
+        <div class="filter-group">
+            <div class="filter-label">To Date</div>
+            <input class="filter-input" id="dateTo" type="date" style="min-width:140px" oninput="applyFilters()">
+        </div>
+        <!-- <button class="btn-clear-filters" onclick="clearFilters()">✕ Clear</button> -->
+        <div class="filter-count" id="filterCount"></div>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+        <div class="table-wrap">
+            <table id="appTable">
+                <thead>
+                    <tr>
+                        <th class="col-check">
+                            <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)">
+                        </th>
+                        <th class="sortable" onclick="sortBy('name')">Candidate</th>
+                        <th class="sortable" onclick="sortBy('email')">Email</th>
+                        <th class="sortable" onclick="sortBy('role')">Job Role</th>
+                        <th class="sortable" onclick="sortBy('date')">Applied At</th>
+                        <th class="sortable" onclick="sortBy('status')">Status</th>
+                        <!-- <th>Action</th> -->
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+        <div class="empty-state" id="emptyState" style="display:none">
+            <div class="empty-icon">🔍</div>
+            <div class="empty-title">No matching applications</div>
+            <div class="empty-sub">Try adjusting your filters</div>
+        </div>
+        <div class="pagination" id="paginationBar">
+            <span id="pageInfo">0 applications</span>
+            <div class="page-btns" id="pageBtns"></div>
+        </div>
+    </div>
 </div>
 
-<div class="card">
-    {% if applications %}
-    <table>
-        <thead>
-            <tr>
-                <th>Candidate</th>
-                <th>Email</th>
-                <th>Applied For</th>
-                <th>Applied At</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for app in applications %}
-            <tr>
-                <td><strong>{{ app.candidate_name }}</strong></td>
-                <td>{{ app.candidate_email }}</td>
-                <td>{{ app.jd_filename.replace('jd_','').replace('.txt','').replace('_',' ').title() }}</td>
-                <td>{{ app.applied_at[:10] }}</td>
-                <td>
-                    <span class="badge badge-{{ app.status }}">
-                        {{ app.status | capitalize }}
-                    </span>
-                </td>
-                <td>
-                    <a href="/screen-candidates" class="btn-screen">Screen →</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <div class="empty">
-        <div class="icon">📭</div>
-        <p>No applications yet. Share a JD link to start receiving applications.</p>
+<!-- Delete confirm modal -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal">
+        <!-- <div class="modal-title">🗑 Delete Applications</div>
+        <div class="modal-body" id="deleteModalBody">Are you sure?</div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+            <button class="btn-confirm-del" onclick="confirmDelete()">Delete</button>
+        </div> -->
     </div>
-    {% endif %}
 </div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Raw data injected from Flask ──────────────────────────────────────────
+const RAW_APPS = [
+    {% if applications %}
+    {% for app in applications %}
+    {
+        id:       "{{ app.candidate_id }}",
+        name:     "{{ app.candidate_name | e }}",
+        email:    "{{ app.candidate_email | e }}",
+        role:     "{{ app.jd_filename.replace('jd_','').replace('.txt','').replace('_',' ').title() | e }}",
+        jd:       "{{ app.jd_filename | e }}",
+        date:     "{{ app.applied_at[:10] }}",
+        datetime: "{{ app.applied_at }}",
+        status:   "{{ app.status }}",
+        screening_id: "{{ app.screening_id if app.screening_id else '' }}"
+    },
+    {% endfor %}
+    {% endif %}
+];
+
+// ── State ─────────────────────────────────────────────────────────────────
+let filtered   = [...RAW_APPS];
+let selected   = new Set();
+let sortCol    = 'date';
+let sortDir    = 'desc';
+let page       = 1;
+const PER_PAGE = 15;
+let pendingDeleteIds = [];
+
+// ── Init ──────────────────────────────────────────────────────────────────
+window.onload = function() {
+    populateRoleFilter();
+    updateStats(RAW_APPS);
+    applyFilters();
+};
+
+function populateRoleFilter() {
+    const roles = [...new Set(RAW_APPS.map(a => a.role))].sort();
+    const sel   = document.getElementById('roleFilter');
+    roles.forEach(r => {
+        const o = document.createElement('option');
+        o.value = r; o.textContent = r;
+        sel.appendChild(o);
+    });
+}
+
+function updateStats(data) {
+    document.getElementById('statTotal').textContent   = RAW_APPS.length;
+    document.getElementById('statPending').textContent  = RAW_APPS.filter(a => a.status === 'pending').length;
+    document.getElementById('statScreened').textContent = RAW_APPS.filter(a => a.status === 'screened').length;
+    document.getElementById('statRoles').textContent    = new Set(RAW_APPS.map(a => a.role)).size;
+}
+
+// ── Filters ───────────────────────────────────────────────────────────────
+function applyFilters() {
+    const search = document.getElementById('searchInput').value.toLowerCase().trim();
+    const role   = document.getElementById('roleFilter').value;
+    const status = document.getElementById('statusFilter').value;
+    const from   = document.getElementById('dateFrom').value;
+    const to     = document.getElementById('dateTo').value;
+
+    filtered = RAW_APPS.filter(a => {
+        if (search && !a.name.toLowerCase().includes(search) && !a.email.toLowerCase().includes(search)) return false;
+        if (role   && a.role   !== role)   return false;
+        if (status && a.status !== status) return false;
+        if (from   && a.date   <  from)    return false;
+        if (to     && a.date   >  to)      return false;
+        return true;
+    });
+
+    // Sort
+    filtered.sort((a, b) => {
+        let va = a[sortCol] || '', vb = b[sortCol] || '';
+        if (sortCol === 'date') { va = a.datetime; vb = b.datetime; }
+        const cmp = va.localeCompare(vb);
+        return sortDir === 'asc' ? cmp : -cmp;
+    });
+
+    page = 1;
+    const active = (search || role || status || from || to);
+    document.getElementById('filterCount').textContent =
+        active ? `${filtered.length} result${filtered.length !== 1 ? 's' : ''}` : 'Showing all';
+
+    renderTable();
+}
+
+function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('roleFilter').value  = '';
+    document.getElementById('statusFilter').value= '';
+    document.getElementById('dateFrom').value    = '';
+    document.getElementById('dateTo').value      = '';
+    applyFilters();
+}
+
+// ── Sort ──────────────────────────────────────────────────────────────────
+function sortBy(col) {
+    if (sortCol === col) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    else { sortCol = col; sortDir = 'asc'; }
+
+    document.querySelectorAll('th.sortable').forEach(th => {
+        th.classList.remove('sorted-asc','sorted-desc');
+    });
+    event.target.classList.add(sortDir === 'asc' ? 'sorted-asc' : 'sorted-desc');
+    applyFilters();
+}
+
+// ── Render ────────────────────────────────────────────────────────────────
+function renderTable() {
+    const body  = document.getElementById('tableBody');
+    const empty = document.getElementById('emptyState');
+    const start = (page - 1) * PER_PAGE;
+    const slice = filtered.slice(start, start + PER_PAGE);
+
+    if (filtered.length === 0) {
+        body.innerHTML = '';
+        empty.style.display = 'block';
+        document.getElementById('paginationBar').style.display = 'none';
+        return;
+    }
+    empty.style.display = 'none';
+    document.getElementById('paginationBar').style.display = 'flex';
+
+    body.innerHTML = slice.map(a => {
+        const isSelected = selected.has(a.id);
+        const badgeClass = a.status === 'screened' ? 'badge-screened' : 'badge-pending';
+        const statusLabel = a.status === 'screened' ? '✅ Screened' : '⏳ Pending';
+
+        const actionBtn = a.status === 'screened' && a.screening_id
+            ? `<a class="btn-result" href="/ranking-results/${a.screening_id}">View Results →</a>`
+            : `<a class="btn-view" href="/screen-candidates">Screen →</a>`;
+
+        return `
+        <tr class="${isSelected ? 'selected' : ''}" id="row-${a.id}">
+            <td class="col-check">
+                <input type="checkbox" ${isSelected ? 'checked' : ''}
+                       onchange="toggleSelect('${a.id}', this)">
+            </td>
+            <td>
+                <div class="candidate-name">${a.name}</div>
+                <div class="candidate-id">${a.id}</div>
+            </td>
+            <td>${a.email}</td>
+            <td><span class="role-tag" title="${a.role}">${a.role}</span></td>
+            <td>${formatDate(a.datetime)}</td>
+            <td><span class="badge ${badgeClass}">${statusLabel}</span></td>
+            <td>
+                <div class="action-cell">
+                    ${actionBtn}
+                    <button class="btn-del" onclick="openSingleDelete('${a.id}','${a.name}')" title="Delete">🗑</button>
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+
+    renderPagination();
+    updateSelectAllState();
+}
+
+function formatDate(dt) {
+    if (!dt) return '—';
+    const d = new Date(dt);
+    return d.toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'})
+         + ' · ' + d.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+}
+
+// ── Pagination ────────────────────────────────────────────────────────────
+function renderPagination() {
+    const total = filtered.length;
+    const pages = Math.ceil(total / PER_PAGE);
+    const start = (page - 1) * PER_PAGE + 1;
+    const end   = Math.min(page * PER_PAGE, total);
+
+    document.getElementById('pageInfo').textContent =
+        total === 0 ? '0 applications' : `${start}–${end} of ${total}`;
+
+    const container = document.getElementById('pageBtns');
+    if (pages <= 1) { container.innerHTML = ''; return; }
+
+    let html = `<button class="page-btn" onclick="goPage(${page-1})" ${page===1?'disabled':''}>‹</button>`;
+    for (let i = 1; i <= pages; i++) {
+        html += `<button class="page-btn ${i===page?'active':''}" onclick="goPage(${i})">${i}</button>`;
+    }
+    html += `<button class="page-btn" onclick="goPage(${page+1})" ${page===pages?'disabled':''}>›</button>`;
+    container.innerHTML = html;
+}
+
+function goPage(p) {
+    const pages = Math.ceil(filtered.length / PER_PAGE);
+    if (p < 1 || p > pages) return;
+    page = p;
+    renderTable();
+}
+
+// ── Selection ─────────────────────────────────────────────────────────────
+function toggleSelect(id, cb) {
+    if (cb.checked) selected.add(id);
+    else selected.delete(id);
+    const row = document.getElementById('row-' + id);
+    if (row) row.classList.toggle('selected', cb.checked);
+    updateBulkBtn();
+    updateSelectAllState();
+}
+
+function toggleSelectAll(cb) {
+    const slice = filtered.slice((page-1)*PER_PAGE, page*PER_PAGE);
+    slice.forEach(a => {
+        if (cb.checked) selected.add(a.id);
+        else selected.delete(a.id);
+    });
+    renderTable();
+    updateBulkBtn();
+}
+
+function updateSelectAllState() {
+    const slice     = filtered.slice((page-1)*PER_PAGE, page*PER_PAGE);
+    const allChk    = document.getElementById('selectAll');
+    const allSelected = slice.length > 0 && slice.every(a => selected.has(a.id));
+    allChk.checked  = allSelected;
+    allChk.indeterminate = !allSelected && slice.some(a => selected.has(a.id));
+}
+
+function updateBulkBtn() {
+    const btn = document.getElementById('bulkDeleteBtn');
+    const cnt = document.getElementById('selectedCount');
+    cnt.textContent = selected.size;
+    btn.classList.toggle('visible', selected.size > 0);
+}
+
+// ── Delete ────────────────────────────────────────────────────────────────
+function openSingleDelete(id, name) {
+    pendingDeleteIds = [id];
+    document.getElementById('deleteModalBody').textContent =
+        `Delete application from "${name}"? This cannot be undone.`;
+    document.getElementById('deleteModal').classList.add('open');
+}
+
+function openBulkDelete() {
+    if (selected.size === 0) return;
+    pendingDeleteIds = [...selected];
+    document.getElementById('deleteModalBody').textContent =
+        `Delete ${selected.size} selected application${selected.size > 1 ? 's' : ''}? This cannot be undone.`;
+    document.getElementById('deleteModal').classList.add('open');
+}
+
+function closeModal() {
+    document.getElementById('deleteModal').classList.remove('open');
+    pendingDeleteIds = [];
+}
+
+function confirmDelete() {
+    closeModal();
+    Promise.all(pendingDeleteIds.map(id =>
+        fetch(`/api/application/${id}`, { method: 'DELETE' })
+            .then(r => r.json())
+    )).then(results => {
+        const ok    = results.filter(r => r.success).length;
+        const fail  = results.length - ok;
+
+        // Remove from RAW_APPS in place
+        pendingDeleteIds.forEach(id => {
+            const idx = RAW_APPS.findIndex(a => a.id === id);
+            if (idx !== -1) RAW_APPS.splice(idx, 1);
+            selected.delete(id);
+        });
+
+        updateStats(RAW_APPS);
+        updateBulkBtn();
+        applyFilters();
+
+        showToast(ok > 0
+            ? `🗑 Deleted ${ok} application${ok > 1 ? 's' : ''}${fail ? ` (${fail} failed)` : ''}`
+            : '❌ Delete failed — check server logs');
+    }).catch(() => showToast('❌ Network error'));
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Close modal on backdrop click
+document.getElementById('deleteModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+</script>
 
 </body>
 </html>

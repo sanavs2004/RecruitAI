@@ -172,43 +172,42 @@ def train_and_save(models_folder: str) -> dict:
 #  SHAP Explanation
 # ══════════════════════════════════════════════════════════════════════════════
 
-def _compute_shap(xgb_model, scaler, features: np.ndarray) -> list:
-    """
-    Compute SHAP values for one candidate.
-    Returns list sorted by impact — highest first.
-
-    Each item:
-    {
-        'feature'   : 'skill_match_score',
-        'label'     : 'Skill Match Score',
-        'value'     : 82.1,
-        'impact'    : '+34.2%',
-        'direction' : 'positive',   ← pushed score UP
-        'magnitude' : 'high',
-    }
-    """
+def _compute_shap_fixed(xgb_model, scaler, features):
+    """Fixed SHAP computation — handles string values from some SHAP versions."""
+    import numpy as np
     try:
         import shap
-
-        scaled = scaler.transform(features.reshape(1, -1))
+ 
+        scaled      = scaler.transform(features.reshape(1, -1))
         explainer   = shap.TreeExplainer(xgb_model)
         shap_values = explainer.shap_values(scaled)
-
-        # Binary classification: pick class 1 (fit=True)
+ 
         if isinstance(shap_values, list):
-            sv = shap_values[1][0]
+            sv = shap_values[1][0] if len(shap_values) > 1 else shap_values[0][0]
         else:
             sv = shap_values[0]
-
-        raw = features[0]
+ 
+        # FIX: Convert each value safely — handles strings like '[5.39375E-1]'
+        def safe_float(val):
+            try:
+                if isinstance(val, str):
+                    # Remove brackets if present: '[5.39E-1]' → '5.39E-1'
+                    val = val.strip().strip('[]')
+                return float(val)
+            except (ValueError, TypeError):
+                return 0.0
+ 
+        raw    = features[0]
         result = []
+        from modules.fit_predictor import FEATURE_NAMES, FEATURE_LABELS
+ 
         for i, fname in enumerate(FEATURE_NAMES):
-            sv_i      = float(sv[i])
-            raw_val   = float(raw[i])
-            abs_pct   = abs(sv_i) * 100
-
+            sv_i    = safe_float(sv[i])        # ← FIX applied here
+            raw_val = float(raw[i])
+            abs_pct = abs(sv_i) * 100
+ 
             magnitude = 'high' if abs_pct >= 10 else ('medium' if abs_pct >= 4 else 'low')
-
+ 
             result.append({
                 'feature'   : fname,
                 'label'     : FEATURE_LABELS.get(fname, fname),
@@ -219,15 +218,17 @@ def _compute_shap(xgb_model, scaler, features: np.ndarray) -> list:
                 'direction' : 'positive' if sv_i > 0 else 'negative',
                 'magnitude' : magnitude,
             })
-
+ 
         result.sort(key=lambda x: x['impact_pct'], reverse=True)
         return result
-
+ 
     except ImportError:
         print("⚠️  pip install shap")
+        from modules.fit_predictor import _simple_explanation
         return _simple_explanation(features)
     except Exception as e:
         print(f"⚠️  SHAP error: {e}")
+        from modules.fit_predictor import _simple_explanation
         return _simple_explanation(features)
 
 
@@ -331,7 +332,7 @@ class FitPredictor:
             # SHAP explanation
             shap_exp = []
             if self.xgb_model is not None:
-                shap_exp = _compute_shap(self.xgb_model, self.scaler, features)
+                shap_exp = _compute_shap_fixed(self.xgb_model, self.scaler, features)
 
             return {
                 'ml_fit_score'     : score,
